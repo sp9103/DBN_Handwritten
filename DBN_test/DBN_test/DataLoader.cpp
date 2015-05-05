@@ -58,7 +58,8 @@ void DataLoader::ImageDataLoad(int batchSize, cv::Mat *dataMat){
 			size.height=n_rows;
 			size.width=n_cols;
 			create_image(&dataImg,size,1,arr, i);
-			//cvShowImage("test", dataImg);
+			cvShowImage("test", dataImg);
+			cvWaitKey(0);
 
 			//Data matrix ¸¸µé±â
 			m_process.ImageToDataMat(dataImg, dataMat, i);

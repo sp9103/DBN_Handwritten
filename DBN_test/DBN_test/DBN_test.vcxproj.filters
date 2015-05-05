@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="DataLoad">
+      <UniqueIdentifier>{1b6e7d2d-d502-40b9-9b69-b267a46349af}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -24,14 +27,17 @@
     <ClCompile Include="BlobLabeling.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="DataLoader.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="DBN.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="Layer.cpp">
       <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="DataLoader.cpp">
+      <Filter>DataLoad</Filter>
+    </ClCompile>
+    <ClCompile Include="LabelLoader.cpp">
+      <Filter>DataLoad</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -44,14 +50,17 @@
     <ClInclude Include="BlobLabeling.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="DataLoader.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="DBN.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Layer.h">
       <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="DataLoader.h">
+      <Filter>DataLoad</Filter>
+    </ClInclude>
+    <ClInclude Include="LabelLoader.h">
+      <Filter>DataLoad</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

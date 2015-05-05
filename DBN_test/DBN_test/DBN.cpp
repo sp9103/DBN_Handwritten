@@ -47,11 +47,6 @@ void DBN::Training(){
 		m_Dataloader.FileOpen("train-images.idx3-ubyte");
 		m_Dataloader.ImageDataLoad(1, &BatchData);
 		m_Dataloader.FileClose();
-		
-		cv::Mat output;
-		hidden3.processData(&output, BatchData);
-		for(int j = 0; j < output.cols; j++)
-			printf("%f\t", output.at<float>(0,i));
 	}
 
 	//supervised training - classifier
