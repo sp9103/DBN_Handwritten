@@ -1,5 +1,4 @@
 #include "DBN.h"
-#include <random>
 
 DBN::DBN(void)
 {

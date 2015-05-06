@@ -1,5 +1,6 @@
 #include "common.h"
 #include "DBN.h"
+#include "Application.h"
 
 int main(){
 	DBN dbn;

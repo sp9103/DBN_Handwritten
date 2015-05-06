@@ -39,6 +39,9 @@
     <ClCompile Include="LabelLoader.cpp">
       <Filter>DataLoad</Filter>
     </ClCompile>
+    <ClCompile Include="Application.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h">
@@ -61,6 +64,9 @@
     </ClInclude>
     <ClInclude Include="LabelLoader.h">
       <Filter>DataLoad</Filter>
+    </ClInclude>
+    <ClInclude Include="Application.h">
+      <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

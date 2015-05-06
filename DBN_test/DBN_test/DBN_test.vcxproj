@@ -82,6 +82,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Application.cpp" />
     <ClCompile Include="BlobLabeling.cpp" />
     <ClCompile Include="DataLoader.cpp" />
     <ClCompile Include="DBN.cpp" />
@@ -91,6 +92,7 @@
     <ClCompile Include="preProcessor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Application.h" />
     <ClInclude Include="BlobLabeling.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="DataLoader.h" />
