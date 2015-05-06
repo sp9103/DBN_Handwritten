@@ -22,7 +22,7 @@ private:
 	LabelLoader m_Labelloader;
 
 	Layer visible;
-	Layer hidden1, hidden2, hidden3;
+	Layer hidden[LAYERHEIGHT-1];
 
 };
 
