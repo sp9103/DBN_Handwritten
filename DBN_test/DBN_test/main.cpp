@@ -7,7 +7,7 @@ int main(){
 
 	//Training phase
 	dbn.Training();
-	dbn.save("DBN_Data.bin");
+	dbn.save("Data\\DBN_Data.bin");
 	
 
 	//Testing phase
