@@ -11,6 +11,6 @@ using namespace std;
 //Deep belif network - Layer information
 #define LAYERHEIGHT 4
 #define NVISIBLE	28*28
-#define NHIDDEN1	1000
-#define NHIDDEN2	500
-#define NHIDDEN3	250
+#define NHIDDEN1	500
+#define NHIDDEN2	400
+#define NHIDDEN3	200
