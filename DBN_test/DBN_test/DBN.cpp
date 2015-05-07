@@ -91,6 +91,12 @@ void DBN::Testing(){
 float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	float tgrad = 0.0f;
 	cv::Mat wGrad, bGrad, cGrad;
+	cv::Mat x1, xk, h1, hk;
+
+	x1.create(minibatch.rows, minibatch.cols, CV_32FC1);
+	xk.create(minibatch.rows, minibatch.cols, CV_32FC1);
+	h1.create(minibatch.rows, layer->getUnitNum(), CV_32FC1);
+	hk.create(minibatch.rows, layer->getUnitNum(), CV_32FC1);
 
 	//Matrix Allocation
 	wGrad.create(layer->m_weight.rows, layer->m_weight.cols, CV_32FC1);
@@ -99,8 +105,15 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 
 	for(int i = 0; i < layer->getUnitNum(); i++){
 		//k-step Contrast Divergence
-		for(int k = 0; k < step; k++){
+		xk = x1 = minibatch.clone();
+		layer->processTempData(&h1, x1);
+		hk = h1.clone();
+		for(int k = 1; k < step; k++){
+			layer->processTempBack(&xk, xk);
+			layer->processTempData(&hk, hk);
 		}
+		
+		//gradient 계산
 
 		//결과 반영
 		layer->ApplyGrad(wGrad, bGrad, cGrad);
