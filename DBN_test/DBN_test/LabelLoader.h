@@ -11,6 +11,8 @@ public:
 
 	void LabelDataLoad(int batchSize, cv::Mat *dataMat);
 
+	int getDataCount();
+
 private:
 	ifstream m_file;
 

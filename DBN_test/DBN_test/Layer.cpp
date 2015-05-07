@@ -37,19 +37,38 @@ void Layer::setLayerRelation(Layer *prev, Layer *post){
 	m_prevLayer = prev;
 	m_postLayer = post;
 
+	//W create
 	int twidth;
 	if(prev == NULL)
-		twidth = 28*28+1;
+		twidth = 28*28;
 	else
-		twidth = prev->getUnitNum()+1;
+		twidth = prev->getUnitNum();
 	m_weight.create(twidth, n_units, CV_32FC1);
 
-	for(int i = 0; i < m_weight.rows; i++)
+	for(int i = 0; i < m_weight.rows; i++){
 		for(int j = 0; j < m_weight.cols; j++){
-			m_weight.at<float>(i,j) = 1.0f;
+			m_weight.at<float>(i,j) = 0.0f;
 		}
+	}
+
+	//bias b create
+	if(prev != NULL){
+		m_b.create(1,prev->getUnitNum(), CV_32FC1);
+		for(int i = 0; i < m_b.rows; i++){
+			for(int j = 0; j < m_b.cols; j++)
+				m_b.at<float>(i,j) = 0.0f;
+		}
+	}
+
+	//bias c create
+	m_c.create(1,getUnitNum(), CV_32FC1);
+	for(int i = 0; i < m_c.rows; i++){
+		for(int j = 0; j < m_c.cols; j++)
+			m_c.at<float>(i,j) = 0.0f;
+	}
 }
 
+//이전 레이어부터 현재 레이어까지 쭉 pulling
 void Layer::processData(cv::Mat *dst, cv::Mat data){
 	Layer *visible = this;
 	cv::Mat input;
@@ -76,6 +95,7 @@ void Layer::processData(cv::Mat *dst, cv::Mat data){
 	}
 }
 
+//바로 이전 레이어에서만 pulling
 void Layer::processTempData(cv::Mat *dst, cv::Mat input){
 	cv::Mat tInput;
 	int i;
@@ -86,8 +106,20 @@ void Layer::processTempData(cv::Mat *dst, cv::Mat input){
 	tInput.at<float>(0,i) = 1.0f;
 
 	dst->create(1, n_units, CV_32FC1);
-	*dst = tInput * m_weight;
-	
+	cv::Mat tW;
+	tW.create(m_weight.rows+1, m_weight.cols, CV_32FC1);
+	for(int i = 0; i < m_weight.rows; i++){
+		for(int j = 0; j < m_weight.cols; j++){
+			if(i == m_weight.rows)
+				tW.at<float>(i,j) = m_b.at<float>(0,j);
+
+			else
+				tW.at<float>(i,j) = m_weight.at<float>(i,j);
+		}
+	}
+
+	*dst = tInput * tW;
+
 	for(i = 0; i < dst->cols; i++)
 		dst->at<float>(0,i) = sigmoid(dst->at<float>(0,i));
 }

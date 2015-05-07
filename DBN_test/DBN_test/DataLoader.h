@@ -12,6 +12,8 @@ public:
 
 	void FileOpen(char *fileName);
 	void FileClose();
+	
+	int getDataCount();
 
 private:
 	ifstream m_file;

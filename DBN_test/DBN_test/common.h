@@ -6,7 +6,8 @@
 
 using namespace std;
 
-#define BATCHSIZE 1000
+#define BATCHSIZE 100
+#define GRADTHRESHOLD 0.01
 
 //Deep belif network - Layer information
 #define LAYERHEIGHT 4

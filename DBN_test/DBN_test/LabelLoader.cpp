@@ -56,3 +56,7 @@ void LabelLoader::LabelDataLoad(int batchSize, cv::Mat *dataMat){
 		printf("File Not opened!\n");
 	}
 }
+
+int LabelLoader::getDataCount(){
+	return number_of_images;
+}
