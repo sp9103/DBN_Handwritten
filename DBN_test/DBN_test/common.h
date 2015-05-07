@@ -3,11 +3,13 @@
 #include <iostream>
 #include <fstream>
 #include <random>
+#include <time.h>
 
 using namespace std;
 
 #define BATCHSIZE 100
 #define GRADTHRESHOLD 0.01
+#define EPSILON		0.01
 
 //Deep belif network - Layer information
 #define LAYERHEIGHT 4

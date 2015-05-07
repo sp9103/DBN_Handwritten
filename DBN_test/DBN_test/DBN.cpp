@@ -39,13 +39,16 @@ void DBN::Load(char *fileName){
 
 void DBN::Training(){
 	float tgrad = 0.0f;
+	int _start, _super, _phase;
 
 	InitNetwork();
 
 	//unsupervised training - 각 RBM 학습
 	printf("Unsupervised Training phase start\n");
+	_start = clock();
 	for(int i = 0; i < LAYERHEIGHT-1; i++){
 		printf("[%d] RBM Training...\n", i+1);
+		_phase = clock();
 
 		while(1){
 			cv::Mat miniBatch;
@@ -54,13 +57,14 @@ void DBN::Training(){
 			//Bottom Layer training
 			if(i == 0){
 				//Input이 이미지 그대로 들어감
-
+				tgrad = RBMupdata(miniBatch, EPSILON, &hidden[i]);
 			}
 			//others
 			else{
 				//input은 이전 레이어의 아웃풋. - ( 계산해줘야함 )
 				cv::Mat tdata;
 				hidden[i].processData(&tdata, miniBatch);
+				tgrad = RBMupdata(tdata, EPSILON, &hidden[i]);
 			}
 
 			//Termination condition
@@ -68,23 +72,29 @@ void DBN::Training(){
 				break;
 		}
 
-		printf("Complete!\n");
+		printf("Complete! (%dms)\n", clock() - _phase);
 	}
-	printf("Unsupervised Training complete\n");
+	printf("Unsupervised Training complete (%dms)\n", clock() - _start);
 
 	//supervised training - full optimization MLP backpropagation
 	printf("Supervised Training phase start\n");
+	_super = clock();
 
 
-	printf("Supervised Training phase complete\n");
+	printf("Supervised Training phase complete (%dms)\n", clock() - _super);
 }
 
 void DBN::Testing(){
 	m_Dataloader.FileOpen("t10k-images.idx3-ubyte");
 }
 
-float DBN::RBMupdata(cv::Mat minibatch, float e, cv::Mat *W, cv::Mat *b, cv::Mat *c){
-	return 0.0f;
+float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer){
+	float tgrad = 0.0f;
+
+	for(int i = 0; i < layer->getUnitNum(); i++){
+	}
+
+	return tgrad;
 }
 
 //Label이 NULL 일때는 로드안함.
