@@ -72,7 +72,7 @@ void Layer::setLayerRelation(Layer *prev, Layer *post){
 void Layer::processData(cv::Mat *dst, cv::Mat data){
 	Layer *visible = this;
 	cv::Mat input;
-	dst->create(1, n_units, CV_32FC1);
+	dst->create(data.rows, n_units, CV_32FC1);
 	//최하위 레이어 검색
 	while(1){
 		if(visible->m_prevLayer == NULL)
@@ -81,31 +81,36 @@ void Layer::processData(cv::Mat *dst, cv::Mat data){
 	}
 
 	input = data.clone();
+	*dst = data.clone();
 	while(1){
-		visible->m_postLayer->processTempData(dst, input);
-		visible = visible->m_postLayer;
-		input = dst->clone();
-
 		if(visible == this)
 			break;
 
+		visible->m_postLayer->processTempData(dst, input);
+		visible = visible->m_postLayer;
+
 		//sampling 결과를 가져옴
-		for(int i = 0; i < input.cols; i++)
-			input.at<float>(0,i) = sampling(input.at<float>(0,i));
+		for(int i = 0; i < dst->rows; i++){
+			for(int j = 0; j < dst->cols; j++)
+				dst->at<float>(i,j) = sampling(dst->at<float>(i,j));
+		}
+		input = dst->clone();
 	}
 }
 
 //바로 이전 레이어에서만 pulling
 void Layer::processTempData(cv::Mat *dst, cv::Mat input){
 	cv::Mat tInput;
-	int i;
+	int j;
 
-	tInput.create(1, input.cols+1, CV_32FC1);
-	for(i = 0; i < input.cols; i++)
-		tInput.at<float>(0,i) = (float)input.at<float>(0,i);
-	tInput.at<float>(0,i) = 1.0f;
+	tInput.create(input.rows, input.cols+1, CV_32FC1);
+	for(int i = 0; i < input.rows; i++){
+		for(j = 0; j < input.cols; j++)
+			tInput.at<float>(i,j) = (float)input.at<float>(i,j);
+		tInput.at<float>(i,j) = 1.0f;
+	}
 
-	dst->create(1, n_units, CV_32FC1);
+	dst->create(input.rows, n_units, CV_32FC1);
 	cv::Mat tW;
 	tW.create(m_weight.rows+1, m_weight.cols, CV_32FC1);
 	for(int i = 0; i < m_weight.rows; i++){
@@ -120,20 +125,22 @@ void Layer::processTempData(cv::Mat *dst, cv::Mat input){
 
 	*dst = tInput * tW;
 
-	for(i = 0; i < dst->cols; i++)
-		dst->at<float>(0,i) = sigmoid(dst->at<float>(0,i));
+	for(int i = 0; i < dst->rows; i++){
+		for(j = 0; j < dst->cols; j++)
+			dst->at<float>(i,j) = sigmoid(dst->at<float>(i,j));
+	}
 }
 
 void Layer::processTempBack(cv::Mat *dst, cv::Mat input){
 	cv::Mat tInput;
 	int i;
 
-	tInput.create(1, input.cols+1, CV_32FC1);
+	tInput.create(input.rows, input.cols+1, CV_32FC1);
 	for(i = 0; i < input.cols; i++)
 		tInput.at<float>(0,i) = (float)input.at<float>(0,i);
 	tInput.at<float>(0,i) = 1.0f;
 
-	dst->create(1, m_prevLayer->n_units, CV_32FC1);
+	dst->create(input.rows, m_prevLayer->n_units, CV_32FC1);
 	cv::Mat tW;
 	tW.create(m_weight.cols+1, m_weight.rows, CV_32FC1);
 	for(int i = 0; i < tW.rows; i++){

@@ -105,12 +105,13 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 
 	for(int i = 0; i < layer->getUnitNum(); i++){
 		//k-step Contrast Divergence
-		xk = x1 = minibatch.clone();
-		layer->processTempData(&h1, x1);
+		layer->m_prevLayer->processData(&x1, minibatch);
+		xk = x1.clone();
+		layer->processData(&h1, x1);
 		hk = h1.clone();
 		for(int k = 1; k < step; k++){
-			layer->processTempBack(&xk, xk);
-			layer->processTempData(&hk, hk);
+			layer->processTempBack(&xk, h1);
+			layer->processTempData(&hk, xk);
 		}
 		
 		//gradient °è»ê

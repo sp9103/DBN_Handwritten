@@ -15,8 +15,13 @@ public:
 	void setLayerRelation(Layer *prev, Layer *post);
 
 	/*RBM 학습을 위한*/
-	void processData(cv::Mat *dst, cv::Mat data);								//현재 레이어 아웃풋을 계산
-	void processTempData(cv::Mat *dst, cv::Mat input);							//Forward
+
+	/*현재 레이어 아웃풋을 계산 - hidden layer의 값*/
+	void processData(cv::Mat *dst, cv::Mat data);
+
+	/*바로 이전 데이터를 넣고 현재 레이어 출력값을냄(현재 레이어가 hidden)*/
+	void processTempData(cv::Mat *dst, cv::Mat input);
+	/*hidden Layer의 값을 넣고 back process 수행*/
 	void processTempBack(cv::Mat *dst, cv::Mat input);
 
 	void ApplyGrad(cv::Mat wGrad, cv::Mat bGrad, cv::Mat cGrad);
