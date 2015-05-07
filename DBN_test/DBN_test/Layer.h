@@ -16,15 +16,19 @@ public:
 
 	/*RBM 학습을 위한*/
 	void processData(cv::Mat *dst, cv::Mat data);								//현재 레이어 아웃풋을 계산
-	void processTempData(cv::Mat *dst, cv::Mat input);
+	void processTempData(cv::Mat *dst, cv::Mat input);							//Forward
+	void processTempBack(cv::Mat *dst, cv::Mat input);
+
+	void ApplyGrad(cv::Mat wGrad, cv::Mat bGrad, cv::Mat cGrad);
 
 	Layer *m_prevLayer, *m_postLayer;
 
-private:
-	int n_units;
 	cv::Mat m_weight;								//bias 미포함
 	cv::Mat m_b;									//bias - visible
 	cv::Mat m_c;									//bias - hidden
+
+private:
+	int n_units;
 
 	float sigmoid(float src);
 };

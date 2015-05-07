@@ -24,7 +24,7 @@ private:
 	Layer visible;
 	Layer hidden[LAYERHEIGHT-1];
 
-	float RBMupdata(cv::Mat x1, float e, Layer *layer);
+	float RBMupdata(cv::Mat x1, float e, Layer *layer, int step);
 
 	void BatchLoad(cv::Mat *batch, cv::Mat *Label, char* DataName, char* LabelName);
 };

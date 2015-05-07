@@ -57,14 +57,14 @@ void DBN::Training(){
 			//Bottom Layer training
 			if(i == 0){
 				//Input이 이미지 그대로 들어감
-				tgrad = RBMupdata(miniBatch, EPSILON, &hidden[i]);
+				tgrad = RBMupdata(miniBatch, EPSILON, &hidden[i], CDStep);
 			}
 			//others
 			else{
 				//input은 이전 레이어의 아웃풋. - ( 계산해줘야함 )
 				cv::Mat tdata;
 				hidden[i].processData(&tdata, miniBatch);
-				tgrad = RBMupdata(tdata, EPSILON, &hidden[i]);
+				tgrad = RBMupdata(tdata, EPSILON, &hidden[i], CDStep);
 			}
 
 			//Termination condition
@@ -88,10 +88,22 @@ void DBN::Testing(){
 	m_Dataloader.FileOpen("t10k-images.idx3-ubyte");
 }
 
-float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer){
+float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	float tgrad = 0.0f;
+	cv::Mat wGrad, bGrad, cGrad;
+
+	//Matrix Allocation
+	wGrad.create(layer->m_weight.rows, layer->m_weight.cols, CV_32FC1);
+	bGrad.create(layer->m_b.rows, layer->m_b.cols, CV_32FC1);
+	cGrad.create(layer->m_c.rows, layer->m_c.cols, CV_32FC1);
 
 	for(int i = 0; i < layer->getUnitNum(); i++){
+		//k-step Contrast Divergence
+		for(int k = 0; k < step; k++){
+		}
+
+		//결과 반영
+		layer->ApplyGrad(wGrad, bGrad, cGrad);
 	}
 
 	return tgrad;

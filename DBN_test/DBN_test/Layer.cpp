@@ -111,7 +111,7 @@ void Layer::processTempData(cv::Mat *dst, cv::Mat input){
 	for(int i = 0; i < m_weight.rows; i++){
 		for(int j = 0; j < m_weight.cols; j++){
 			if(i == m_weight.rows)
-				tW.at<float>(i,j) = m_b.at<float>(0,j);
+				tW.at<float>(i,j) = m_c.at<float>(0,j);
 
 			else
 				tW.at<float>(i,j) = m_weight.at<float>(i,j);
@@ -122,4 +122,38 @@ void Layer::processTempData(cv::Mat *dst, cv::Mat input){
 
 	for(i = 0; i < dst->cols; i++)
 		dst->at<float>(0,i) = sigmoid(dst->at<float>(0,i));
+}
+
+void Layer::processTempBack(cv::Mat *dst, cv::Mat input){
+	cv::Mat tInput;
+	int i;
+
+	tInput.create(1, input.cols+1, CV_32FC1);
+	for(i = 0; i < input.cols; i++)
+		tInput.at<float>(0,i) = (float)input.at<float>(0,i);
+	tInput.at<float>(0,i) = 1.0f;
+
+	dst->create(1, m_prevLayer->n_units, CV_32FC1);
+	cv::Mat tW;
+	tW.create(m_weight.cols+1, m_weight.rows, CV_32FC1);
+	for(int i = 0; i < tW.rows; i++){
+		for(int j = 0; j < tW.cols; j++){
+			if(i == m_weight.rows)
+				tW.at<float>(i,j) = m_b.at<float>(0,j);
+
+			else
+				tW.at<float>(i,j) = m_weight.at<float>(j,i);
+		}
+	}
+
+	*dst = tInput * tW;
+
+	for(i = 0; i < dst->cols; i++)
+		dst->at<float>(0,i) = sigmoid(dst->at<float>(0,i));
+}
+
+void Layer::ApplyGrad(cv::Mat wGrad, cv::Mat bGrad, cv::Mat cGrad){
+	m_weight = m_weight + wGrad;
+	m_b = m_b + bGrad;
+	m_c = m_c + cGrad;
 }
