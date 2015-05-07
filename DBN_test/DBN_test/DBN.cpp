@@ -115,6 +115,10 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 		}
 		
 		//gradient 계산
+		for(int i = 0; i < xk.cols; i++)
+			printf("%f\t", xk.at<float>(0,i));
+		for(int i = 0; i < hk.cols; i++)
+			printf("\n%f\t", hk.at<float>(0,i));
 
 		//결과 반영
 		layer->ApplyGrad(wGrad, bGrad, cGrad);

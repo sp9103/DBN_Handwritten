@@ -89,11 +89,6 @@ void Layer::processData(cv::Mat *dst, cv::Mat data){
 		visible->m_postLayer->processTempData(dst, input);
 		visible = visible->m_postLayer;
 
-		//sampling 결과를 가져옴
-		for(int i = 0; i < dst->rows; i++){
-			for(int j = 0; j < dst->cols; j++)
-				dst->at<float>(i,j) = sampling(dst->at<float>(i,j));
-		}
 		input = dst->clone();
 	}
 }
@@ -113,9 +108,9 @@ void Layer::processTempData(cv::Mat *dst, cv::Mat input){
 	dst->create(input.rows, n_units, CV_32FC1);
 	cv::Mat tW;
 	tW.create(m_weight.rows+1, m_weight.cols, CV_32FC1);
-	for(int i = 0; i < m_weight.rows; i++){
-		for(int j = 0; j < m_weight.cols; j++){
-			if(i == m_weight.rows)
+	for(int i = 0; i < tW.rows; i++){
+		for(j = 0; j < tW.cols; j++){
+			if(i == tW.rows-1)
 				tW.at<float>(i,j) = m_c.at<float>(0,j);
 
 			else
@@ -127,25 +122,27 @@ void Layer::processTempData(cv::Mat *dst, cv::Mat input){
 
 	for(int i = 0; i < dst->rows; i++){
 		for(j = 0; j < dst->cols; j++)
-			dst->at<float>(i,j) = sigmoid(dst->at<float>(i,j));
+			dst->at<float>(i,j) = sampling(sigmoid(dst->at<float>(i,j)));
 	}
 }
 
 void Layer::processTempBack(cv::Mat *dst, cv::Mat input){
 	cv::Mat tInput;
-	int i;
+	int j;
 
 	tInput.create(input.rows, input.cols+1, CV_32FC1);
-	for(i = 0; i < input.cols; i++)
-		tInput.at<float>(0,i) = (float)input.at<float>(0,i);
-	tInput.at<float>(0,i) = 1.0f;
+	for(int i = 0; i < input.rows; i++){
+		for(j = 0; j < input.cols; j++)
+			tInput.at<float>(i,j) = (float)input.at<float>(i,j);
+		tInput.at<float>(i,j) = 1.0f;
+	}
 
 	dst->create(input.rows, m_prevLayer->n_units, CV_32FC1);
 	cv::Mat tW;
 	tW.create(m_weight.cols+1, m_weight.rows, CV_32FC1);
 	for(int i = 0; i < tW.rows; i++){
-		for(int j = 0; j < tW.cols; j++){
-			if(i == m_weight.rows)
+		for(j = 0; j < tW.cols; j++){
+			if(i == tW.rows-1)
 				tW.at<float>(i,j) = m_b.at<float>(0,j);
 
 			else
@@ -155,8 +152,10 @@ void Layer::processTempBack(cv::Mat *dst, cv::Mat input){
 
 	*dst = tInput * tW;
 
-	for(i = 0; i < dst->cols; i++)
-		dst->at<float>(0,i) = sigmoid(dst->at<float>(0,i));
+	for(int i = 0; i < dst->rows; i++){
+		for(j = 0; j < dst->cols; j++)
+			dst->at<float>(i,j) = sampling(sigmoid(dst->at<float>(i,j)));
+	}
 }
 
 void Layer::ApplyGrad(cv::Mat wGrad, cv::Mat bGrad, cv::Mat cGrad){

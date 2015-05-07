@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#define BATCHSIZE 100
+#define BATCHSIZE 1
 #define GRADTHRESHOLD 0.01
 #define EPSILON		0.01
 #define CDStep		2
