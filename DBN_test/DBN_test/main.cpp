@@ -5,6 +5,8 @@
 int main(){
 	DBN dbn;
 
+	printf("DBN Handwritten Recognition\n\n");
+
 	//Training phase
 	dbn.Training();
 	dbn.save("Data\\DBN_Data.bin");

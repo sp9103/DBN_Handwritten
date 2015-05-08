@@ -63,7 +63,7 @@ void DBN::Training(){
 			else{
 				//input은 이전 레이어의 아웃풋. - ( 계산해줘야함 )
 				cv::Mat tdata;
-				hidden[i].processData(&tdata, miniBatch);
+				hidden[i-1].processData(&tdata, miniBatch);
 				tgrad = RBMupdata(tdata, EPSILON, &hidden[i], CDStep);
 			}
 
@@ -77,7 +77,7 @@ void DBN::Training(){
 	printf("Unsupervised Training complete (%dms)\n", clock() - _start);
 
 	//supervised training - full optimization MLP backpropagation
-	printf("Supervised Training phase start\n");
+	printf("\nSupervised Training phase start\n");
 	_super = clock();
 
 
@@ -93,21 +93,13 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	cv::Mat wGrad, bGrad, cGrad;
 	cv::Mat x1, xk, h1, hk;
 
-	x1.create(minibatch.rows, minibatch.cols, CV_32FC1);
-	xk.create(minibatch.rows, minibatch.cols, CV_32FC1);
 	h1.create(minibatch.rows, layer->getUnitNum(), CV_32FC1);
 	hk.create(minibatch.rows, layer->getUnitNum(), CV_32FC1);
 
-	//Matrix Allocation
-	wGrad.create(layer->m_weight.rows, layer->m_weight.cols, CV_32FC1);
-	bGrad.create(1, layer->m_b.cols, CV_32FC1);
-	cGrad.create(1, layer->m_c.cols, CV_32FC1);
-
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//k-step Contrast Divergence
-	layer->m_prevLayer->processData(&x1, minibatch);
-	xk = x1.clone();
-	layer->processData(&h1, x1);
+	xk = x1 = minibatch.clone();
+	layer->processTempData(&h1, x1);
 	hk = h1.clone();
 	for(int k = 1; k < step; k++){
 		layer->processTempBack(&xk, h1);
@@ -116,6 +108,7 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 
 	//gradient 계산
 	cv::Mat tprob = layer->calcProbH(xk);
+
 	wGrad = calcW(h1, x1, tprob, xk);
 	bGrad = calcB(x1, xk);
 	cGrad = calcC(h1, tprob);
@@ -123,6 +116,8 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	//결과 반영
 	layer->ApplyGrad(wGrad, bGrad, cGrad);
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	tgrad = MatMaxEle(wGrad);
 
 	return tgrad;
 }
@@ -200,8 +195,35 @@ cv::Mat DBN::calcW(cv::Mat h1, cv::Mat x1, cv::Mat prob, cv::Mat xk){
 	result.create(x1.cols, h1.cols, CV_32FC1);
 	MatZeros(&result);
 
-	result = h1.t()*x1 - prob.t()*xk;
-	result = EPSILON * result;
+	result = x1.t()*h1 - xk.t()*prob;
+	result = EPSILON * result / h1.rows;
 
 	return result.clone();
+}
+
+void DBN::DataVis(cv::Mat data){
+	cv::Mat fic;
+	fic.create(28, 28, CV_8UC1);
+
+	for(int i = 0; i < data.cols; i++){
+		fic.at<uchar>(i/28,i%28) = (data.at<float>(0,i) > 0.0f) ? 255 : 0;
+	}
+
+	cv::imshow("ttt", fic);
+	cv::waitKey(0);
+}
+
+float DBN::MatMaxEle(cv::Mat src){
+	float tmax = 0.0f;
+
+	for(int i = 0; i < src.rows; i++){
+		for(int j = 0; j < src.cols; j++){
+			float tele = abs(src.at<float>(i,j));
+
+			if(tele > tmax)
+				tmax = tele;
+		}
+	}
+
+	return tmax;
 }

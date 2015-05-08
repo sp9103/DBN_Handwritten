@@ -37,5 +37,11 @@ private:
 	cv::Mat calcC(cv::Mat h1, cv::Mat prob);
 	/*weight w calculation*/
 	cv::Mat calcW(cv::Mat h1, cv::Mat x1, cv::Mat prob, cv::Mat xk);
+
+	/*Pick Matrix Maximum element*/
+	float MatMaxEle(cv::Mat src);
+
+	//Debug¿ë ÇÔ¼ö
+	void DataVis(cv::Mat data);
 };
 
