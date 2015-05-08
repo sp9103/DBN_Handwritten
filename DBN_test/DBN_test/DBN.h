@@ -30,5 +30,12 @@ private:
 
 	/*이미 할당된 메트릭스 원소를 모두 0으로 초기화*/
 	void MatZeros(cv::Mat *target);
+
+	/*bias b calculation*/
+	cv::Mat calcB(cv::Mat x1, cv::Mat xk);
+	/*bias c calculation*/
+	cv::Mat calcC(cv::Mat h1, cv::Mat prob);
+	/*weight w calculation*/
+	cv::Mat calcW(cv::Mat h1, cv::Mat x1, cv::Mat prob, cv::Mat xk);
 };
 

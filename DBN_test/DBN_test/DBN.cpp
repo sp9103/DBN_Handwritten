@@ -100,32 +100,29 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 
 	//Matrix Allocation
 	wGrad.create(layer->m_weight.rows, layer->m_weight.cols, CV_32FC1);
-	bGrad.create(layer->m_b.rows, layer->m_b.cols, CV_32FC1);
-	cGrad.create(layer->m_c.rows, layer->m_c.cols, CV_32FC1);
+	bGrad.create(1, layer->m_b.cols, CV_32FC1);
+	cGrad.create(1, layer->m_c.cols, CV_32FC1);
 
-	MatZeros(&wGrad);
-	MatZeros(&bGrad);
-	MatZeros(&cGrad);
-
-	for(int i = 0; i < layer->getUnitNum(); i++){
-		//k-step Contrast Divergence
-		layer->m_prevLayer->processData(&x1, minibatch);
-		xk = x1.clone();
-		layer->processData(&h1, x1);
-		hk = h1.clone();
-		for(int k = 1; k < step; k++){
-			layer->processTempBack(&xk, h1);
-			layer->processTempData(&hk, xk);
-		}
-		
-		//gradient 계산
-		//wGrad = ();
-		bGrad = bGrad + (x1 - xk);
-		//cGrad = ();
-
-		//결과 반영
-		layer->ApplyGrad(wGrad, bGrad, cGrad);
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//k-step Contrast Divergence
+	layer->m_prevLayer->processData(&x1, minibatch);
+	xk = x1.clone();
+	layer->processData(&h1, x1);
+	hk = h1.clone();
+	for(int k = 1; k < step; k++){
+		layer->processTempBack(&xk, h1);
+		layer->processTempData(&hk, xk);
 	}
+
+	//gradient 계산
+	cv::Mat tprob;
+	wGrad = calcW(h1, x1, tprob, xk);
+	bGrad = calcB(x1, xk);
+	cGrad = calcC(h1, tprob);
+
+	//결과 반영
+	layer->ApplyGrad(wGrad, bGrad, cGrad);
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	return tgrad;
 }
@@ -138,20 +135,20 @@ void DBN::BatchLoad(cv::Mat *batch, cv::Mat *Label, char* DataName, char* LabelN
 
 	if(tCount == 0){
 		m_Dataloader.FileOpen(DataName);
-		
+
 		if(Label != NULL)
 			m_Labelloader.FileOpen(LabelName);
 	}
 
 	m_Dataloader.ImageDataLoad(BATCHSIZE, batch);
-	
+
 	if(Label != NULL)
 		m_Labelloader.LabelDataLoad(BATCHSIZE, Label);
 	tCount += BATCHSIZE;
 
 	if(tCount == m_Dataloader.getDataCount()){
 		m_Dataloader.FileClose();
-		
+
 		if(Label != NULL)
 			m_Labelloader.FileClose();
 		tCount = 0;
@@ -164,4 +161,44 @@ void DBN::MatZeros(cv::Mat *target){
 			target->at<float>(i,j) = 0.0f;
 		}
 	}
+}
+
+cv::Mat DBN::calcB(cv::Mat x1, cv::Mat xk){
+	cv::Mat result;
+
+	result.create(1, x1.cols, CV_32FC1);
+	MatZeros(&result);
+
+	for(int i = 0; i < x1.rows; i++){
+		for(int j = 0; j < x1.cols; j++){
+			result.at<float>(0,j) += EPSILON * (x1.at<float>(i,j) - xk.at<float>(i,j)) / (float)x1.rows;
+		}
+	}
+
+	return result.clone();
+}
+
+cv::Mat DBN::calcC(cv::Mat h1, cv::Mat prob){
+	cv::Mat result;
+
+	result.create(1, h1.cols, CV_32FC1);
+
+	for(int i = 0; i < h1.rows; i++){
+		for(int j = 0; j < h1.cols; j++){
+			result.at<float>(0,j) += EPSILON * (h1.at<float>(i,j) - prob.at<float>(0,j)) / (float)h1.rows;
+		}
+
+	}
+
+	return result.clone();
+}
+
+cv::Mat DBN::calcW(cv::Mat h1, cv::Mat x1, cv::Mat prob, cv::Mat xk){
+	cv::Mat result;
+
+	result.create(x1.cols, h1.cols, CV_32FC1);
+
+
+
+	return result.clone();
 }
