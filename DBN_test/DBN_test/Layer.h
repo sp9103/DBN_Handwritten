@@ -26,6 +26,8 @@ public:
 
 	void ApplyGrad(cv::Mat wGrad, cv::Mat bGrad, cv::Mat cGrad);
 
+	cv::Mat calcProbH(cv::Mat x);
+
 	Layer *m_prevLayer, *m_postLayer;
 
 	cv::Mat m_weight;								//bias ¹ÌÆ÷ÇÔ

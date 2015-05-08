@@ -115,7 +115,7 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	}
 
 	//gradient °è»ê
-	cv::Mat tprob;
+	cv::Mat tprob = layer->calcProbH(xk);
 	wGrad = calcW(h1, x1, tprob, xk);
 	bGrad = calcB(x1, xk);
 	cGrad = calcC(h1, tprob);
@@ -182,6 +182,7 @@ cv::Mat DBN::calcC(cv::Mat h1, cv::Mat prob){
 	cv::Mat result;
 
 	result.create(1, h1.cols, CV_32FC1);
+	MatZeros(&result);
 
 	for(int i = 0; i < h1.rows; i++){
 		for(int j = 0; j < h1.cols; j++){
@@ -197,8 +198,10 @@ cv::Mat DBN::calcW(cv::Mat h1, cv::Mat x1, cv::Mat prob, cv::Mat xk){
 	cv::Mat result;
 
 	result.create(x1.cols, h1.cols, CV_32FC1);
+	MatZeros(&result);
 
-
+	result = h1.t()*x1 - prob.t()*xk;
+	result = EPSILON * result;
 
 	return result.clone();
 }

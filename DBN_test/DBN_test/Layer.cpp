@@ -163,3 +163,38 @@ void Layer::ApplyGrad(cv::Mat wGrad, cv::Mat bGrad, cv::Mat cGrad){
 	m_b = m_b + bGrad;
 	m_c = m_c + cGrad;
 }
+
+cv::Mat Layer::calcProbH(cv::Mat x){
+	cv::Mat result, tInput;
+	int j;
+
+	result.create(x.rows, n_units, CV_32FC1);
+
+	tInput.create(x.rows, x.cols+1, CV_32FC1);
+	for(int i = 0; i < x.rows; i++){
+		for(j = 0; j < x.cols; j++)
+			tInput.at<float>(i,j) = (float)x.at<float>(i,j);
+		tInput.at<float>(i,j) = 1.0f;
+	}
+
+	cv::Mat tW;
+	tW.create(m_weight.rows+1, m_weight.cols, CV_32FC1);
+	for(int i = 0; i < tW.rows; i++){
+		for(j = 0; j < tW.cols; j++){
+			if(i == tW.rows-1)
+				tW.at<float>(i,j) = m_c.at<float>(0,j);
+
+			else
+				tW.at<float>(i,j) = m_weight.at<float>(i,j);
+		}
+	}
+
+	result = tInput * tW;
+
+	for(int i = 0; i < result.rows; i++){
+		for(j = 0; j < result.cols; j++)
+			result.at<float>(i,j) = sigmoid(result.at<float>(i,j));
+	}
+
+	return result.clone();
+}
