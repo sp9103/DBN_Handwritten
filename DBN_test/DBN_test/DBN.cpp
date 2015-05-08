@@ -103,6 +103,10 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	bGrad.create(layer->m_b.rows, layer->m_b.cols, CV_32FC1);
 	cGrad.create(layer->m_c.rows, layer->m_c.cols, CV_32FC1);
 
+	MatZeros(&wGrad);
+	MatZeros(&bGrad);
+	MatZeros(&cGrad);
+
 	for(int i = 0; i < layer->getUnitNum(); i++){
 		//k-step Contrast Divergence
 		layer->m_prevLayer->processData(&x1, minibatch);
@@ -115,10 +119,9 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 		}
 		
 		//gradient 계산
-		for(int i = 0; i < xk.cols; i++)
-			printf("%f\t", xk.at<float>(0,i));
-		for(int i = 0; i < hk.cols; i++)
-			printf("\n%f\t", hk.at<float>(0,i));
+		//wGrad = ();
+		bGrad = bGrad + (x1 - xk);
+		//cGrad = ();
 
 		//결과 반영
 		layer->ApplyGrad(wGrad, bGrad, cGrad);
@@ -152,5 +155,13 @@ void DBN::BatchLoad(cv::Mat *batch, cv::Mat *Label, char* DataName, char* LabelN
 		if(Label != NULL)
 			m_Labelloader.FileClose();
 		tCount = 0;
+	}
+}
+
+void DBN::MatZeros(cv::Mat *target){
+	for(int i = 0; i < target->rows; i++){
+		for(int j = 0; j < target->cols; j++){
+			target->at<float>(i,j) = 0.0f;
+		}
 	}
 }

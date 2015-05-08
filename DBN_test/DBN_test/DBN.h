@@ -27,5 +27,8 @@ private:
 	float RBMupdata(cv::Mat x1, float e, Layer *layer, int step);
 
 	void BatchLoad(cv::Mat *batch, cv::Mat *Label, char* DataName, char* LabelName);
+
+	/*이미 할당된 메트릭스 원소를 모두 0으로 초기화*/
+	void MatZeros(cv::Mat *target);
 };
 
