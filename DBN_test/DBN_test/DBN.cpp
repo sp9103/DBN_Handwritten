@@ -40,14 +40,18 @@ void DBN::Load(char *fileName){
 void DBN::Training(){
 	float tgrad = 0.0f;
 	int _start, _super, _phase;
+	int batchCount = 0;
 
 	InitNetwork();
+
+	RBMLayerload("Layer1Data.bin", &hidden[0]);
 
 	//unsupervised training - 각 RBM 학습
 	printf("Unsupervised Training phase start\n");
 	_start = clock();
-	for(int i = 0; i < LAYERHEIGHT-1; i++){
+	for(int i = 1; i < LAYERHEIGHT-1; i++){
 		printf("[%d] RBM Training...\n", i+1);
+		batchCount = 0;
 		_phase = clock();
 
 		while(1){
@@ -68,13 +72,21 @@ void DBN::Training(){
 			}
 
 			//Termination condition
-			if(GRADTHRESHOLD > tgrad)
+			printf("Layer[%d] - [%d] Batch calculated, Max gradient : %f\n", i+1, ++batchCount, tgrad);
+			if(GRADTHRESHOLD > tgrad){
+				//각 RBM Training Data를 저장함
+				char tbuf[256];
+				sprintf(tbuf, "Layer%dData.bin", i+1);
+				RBMLayersave(tbuf, hidden[i]);
 				break;
+			}
 		}
 
 		printf("Complete! (%dms)\n", clock() - _phase);
 	}
 	printf("Unsupervised Training complete (%dms)\n", clock() - _start);
+
+	RBMsave("RBMDATA.bin");
 
 	//supervised training - full optimization MLP backpropagation
 	printf("\nSupervised Training phase start\n");
@@ -98,12 +110,26 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//k-step Contrast Divergence
-	xk = x1 = minibatch.clone();
+	MatCopy(minibatch, &x1);
+	MatCopy(minibatch, &xk);
 	layer->processTempData(&h1, x1);
-	hk = h1.clone();
+	MatCopy(h1, &hk);
 	for(int k = 1; k < step; k++){
 		layer->processTempBack(&xk, h1);
 		layer->processTempData(&hk, xk);
+	}
+
+	//맨 하위 일때만
+	if(layer->m_prevLayer->m_prevLayer == NULL){
+		DataVis(minibatch, xk);
+	}
+
+	//두번째 레이어일때
+	if(layer->m_prevLayer->m_prevLayer->m_prevLayer == NULL){
+		cv::Mat debugX, debugXk;
+		layer->m_prevLayer->processTempBack(&debugX, x1);
+		layer->m_prevLayer->processTempBack(&debugXk, xk);
+		DataVis(debugX, debugXk);
 	}
 
 	//gradient 계산
@@ -117,7 +143,7 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	layer->ApplyGrad(wGrad, bGrad, cGrad);
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	tgrad = MatMaxEle(wGrad);
+	tgrad = MatMaxEle(wGrad) / EPSILON;
 
 	return tgrad;
 }
@@ -128,7 +154,7 @@ void DBN::BatchLoad(cv::Mat *batch, cv::Mat *Label, char* DataName, char* LabelN
 	//순차적으로 뽑음 (추후 랜덤 배치로 구현)
 	static int tCount = 0;
 
-	if(tCount == 0){
+	if(tCount <= 0){
 		m_Dataloader.FileOpen(DataName);
 
 		if(Label != NULL)
@@ -196,21 +222,25 @@ cv::Mat DBN::calcW(cv::Mat h1, cv::Mat x1, cv::Mat prob, cv::Mat xk){
 	MatZeros(&result);
 
 	result = x1.t()*h1 - xk.t()*prob;
+
 	result = EPSILON * result / h1.rows;
 
 	return result.clone();
 }
 
-void DBN::DataVis(cv::Mat data){
-	cv::Mat fic;
+void DBN::DataVis(cv::Mat data1, cv::Mat data2){
+	cv::Mat fic, fic2;
 	fic.create(28, 28, CV_8UC1);
+	fic2.create(28, 28, CV_8UC1);
 
-	for(int i = 0; i < data.cols; i++){
-		fic.at<uchar>(i/28,i%28) = (data.at<float>(0,i) > 0.0f) ? 255 : 0;
+	for(int i = 0; i < data1.cols; i++){
+		fic.at<uchar>(i/28,i%28) = (data1.at<float>(0,i) > 0.0f) ? 255 : 0;
+		fic2.at<uchar>(i/28,i%28) = (data2.at<float>(0,i) > 0.0f) ? 255 : 0;
 	}
 
 	cv::imshow("ttt", fic);
-	cv::waitKey(0);
+	cv::imshow("eee", fic2);
+	cv::waitKey(1);
 }
 
 float DBN::MatMaxEle(cv::Mat src){
@@ -226,4 +256,185 @@ float DBN::MatMaxEle(cv::Mat src){
 	}
 
 	return tmax;
+}
+
+void DBN::MatCopy(cv::Mat src, cv::Mat *dst){
+	dst->create(src.rows, src.cols, CV_32FC1);
+
+	for(int i = 0; i < src.rows; i++){
+		for(int j = 0; j <src.cols; j++){
+			dst->at<float>(i,j) = src.at<float>(i,j);
+		}
+	}
+}
+
+void DBN::RBMsave(char *fileName){
+	printf("Training result writing..\n");
+	FILE *fp = fopen(fileName, "wb");
+	//SaveFile
+	int temp = LAYERHEIGHT;
+	fwrite(&temp,sizeof(int),1, fp);			//Layer Height write
+
+	//Layer unit information write
+	temp = NHIDDEN1;
+	fwrite(&temp, sizeof(int), 1, fp);
+	temp = NHIDDEN2;
+	fwrite(&temp, sizeof(int), 1, fp);
+	temp = NHIDDEN3;
+	fwrite(&temp, sizeof(int), 1, fp);
+
+	//Weight & biase write
+	for(int i = 0; i < LAYERHEIGHT-1; i++){
+		//weight
+		for(int j = 0; j < hidden[i].m_weight.rows; j++){
+			for(int k = 0; k < hidden[i].m_weight.cols; k++){
+				float tf = hidden[i].m_weight.at<float>(j,k);
+				fwrite(&tf, sizeof(float), 1, fp);
+			}
+		}
+
+		//b
+		for(int j = 0; j < hidden[i].m_b.rows; j++){
+			for(int k = 0; k < hidden[i].m_b.cols; k++){
+				float tf = hidden[i].m_b.at<float>(j,k);
+				fwrite(&tf, sizeof(float), 1, fp);
+			}
+		}
+
+		//c
+		for(int j = 0; j < hidden[i].m_c.rows; j++){
+			for(int k = 0; k < hidden[i].m_c.cols; k++){
+				float tf = hidden[i].m_c.at<float>(j,k);
+				fwrite(&tf, sizeof(float), 1, fp);
+			}
+		}
+	}
+
+	fclose(fp);
+	printf("Writing complete!\n");
+}
+
+void DBN::RBMLoad(char *fileName){
+	printf("Training result Loading..\n");
+	FILE *fp = fopen(fileName, "rb");
+	//SaveFile
+	int temp;
+	fread(&temp,sizeof(int),1, fp);			//Layer Height write
+
+	//Layer unit information write
+	fread(&temp, sizeof(int), 1, fp);
+	fread(&temp, sizeof(int), 1, fp);
+	fread(&temp, sizeof(int), 1, fp);
+
+	//Weight & biase write
+	for(int i = 0; i < LAYERHEIGHT-1; i++){
+		//weight
+		for(int j = 0; j < hidden[i].m_weight.rows; j++){
+			for(int k = 0; k < hidden[i].m_weight.cols; k++){
+				float tf;
+				fread(&tf, sizeof(float), 1, fp);
+				hidden[i].m_weight.at<float>(j,k) = tf;
+			}
+		}
+
+		//b
+		for(int j = 0; j < hidden[i].m_b.rows; j++){
+			for(int k = 0; k < hidden[i].m_b.cols; k++){
+				float tf;
+				fread(&tf, sizeof(float), 1, fp);
+				hidden[i].m_b.at<float>(j,k) = tf;
+			}
+		}
+
+		//c
+		for(int j = 0; j < hidden[i].m_c.rows; j++){
+			for(int k = 0; k < hidden[i].m_c.cols; k++){
+				float tf;
+				fread(&tf, sizeof(float), 1, fp);
+				hidden[i].m_c.at<float>(j,k) = tf;
+			}
+		}
+	}
+
+	fclose(fp);
+	printf("Writing complete!\n");
+}
+
+void DBN::RBMLayersave(char *fileName, Layer src){
+	printf("Training result writing..\n");
+	FILE *fp = fopen(fileName, "wb");
+
+	//Layer unit information write
+	int temp = src.getUnitNum();
+	fwrite(&temp, sizeof(int), 1, fp);
+
+	//Weight & biase write
+
+	//weight
+	for(int j = 0; j < src.m_weight.rows; j++){
+		for(int k = 0; k < src.m_weight.cols; k++){
+			float tf = src.m_weight.at<float>(j,k);
+			fwrite(&tf, sizeof(float), 1, fp);
+		}
+	}
+
+	//b
+	for(int j = 0; j < src.m_b.rows; j++){
+		for(int k = 0; k < src.m_b.cols; k++){
+			float tf = src.m_b.at<float>(j,k);
+			fwrite(&tf, sizeof(float), 1, fp);
+		}
+	}
+
+	//c
+	for(int j = 0; j < src.m_c.rows; j++){
+		for(int k = 0; k < src.m_c.cols; k++){
+			float tf = src.m_c.at<float>(j,k);
+			fwrite(&tf, sizeof(float), 1, fp);
+		}
+	}
+
+	fclose(fp);
+	printf("Writing complete!\n");
+}
+
+void DBN::RBMLayerload(char *fileName, Layer *dst){
+	printf("Training result Loading..\n");
+	FILE *fp = fopen(fileName, "rb");
+
+
+	//Layer unit information write
+	int temp;
+	fread(&temp, sizeof(int), 1, fp);
+
+	//Weight & biase write
+	//weight
+	for(int j = 0; j < dst->m_weight.rows; j++){
+		for(int k = 0; k < dst->m_weight.cols; k++){
+			float tf;
+			fread(&tf, sizeof(float), 1, fp);
+			dst->m_weight.at<float>(j,k) = tf;
+		}
+	}
+
+	//b
+	for(int j = 0; j < dst->m_b.rows; j++){
+		for(int k = 0; k < dst->m_b.cols; k++){
+			float tf;
+			fread(&tf, sizeof(float), 1, fp);
+			dst->m_b.at<float>(j,k) = tf;
+		}
+	}
+
+	//c
+	for(int j = 0; j < dst->m_c.rows; j++){
+		for(int k = 0; k < dst->m_c.cols; k++){
+			float tf;
+			fread(&tf, sizeof(float), 1, fp);
+			dst->m_c.at<float>(j,k) = tf;
+		}
+	}
+
+	fclose(fp);
+	printf("Load complete!\n");
 }

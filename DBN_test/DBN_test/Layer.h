@@ -28,6 +28,9 @@ public:
 
 	cv::Mat calcProbH(cv::Mat x);
 
+	//matrix copy
+	void MatCopy(cv::Mat src, cv::Mat *dst);
+
 	Layer *m_prevLayer, *m_postLayer;
 
 	cv::Mat m_weight;								//bias ¹ÌÆ÷ÇÔ

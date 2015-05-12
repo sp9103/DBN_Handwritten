@@ -80,8 +80,8 @@ void Layer::processData(cv::Mat *dst, cv::Mat data){
 		visible = visible->m_prevLayer;
 	}
 
-	input = data.clone();
-	*dst = data.clone();
+	MatCopy(data, &input);
+	MatCopy(data, dst);
 	while(1){
 		if(visible == this)
 			break;
@@ -197,4 +197,14 @@ cv::Mat Layer::calcProbH(cv::Mat x){
 	}
 
 	return result.clone();
+}
+
+void Layer::MatCopy(cv::Mat src, cv::Mat *dst){
+	dst->create(src.rows, src.cols, CV_32FC1);
+
+	for(int i = 0; i < src.rows; i++){
+		for(int j = 0; j <src.cols; j++){
+			dst->at<float>(i,j) = src.at<float>(i,j);
+		}
+	}
 }

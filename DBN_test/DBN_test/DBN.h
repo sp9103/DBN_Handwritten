@@ -41,7 +41,16 @@ private:
 	/*Pick Matrix Maximum element*/
 	float MatMaxEle(cv::Mat src);
 
+	//matrix copy
+	void MatCopy(cv::Mat src, cv::Mat *dst);
+
 	//Debug¿ë ÇÔ¼ö
-	void DataVis(cv::Mat data);
+	void DataVis(cv::Mat data, cv::Mat data2);
+
+	void RBMsave(char *fileName);
+	void RBMLoad(char *fileName);
+
+	void RBMLayersave(char *fileName, Layer src);
+	void RBMLayerload(char *fileName, Layer *dst);
 };
 
