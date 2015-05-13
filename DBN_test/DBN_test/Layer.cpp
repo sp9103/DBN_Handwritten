@@ -126,11 +126,12 @@ void Layer::processTempData(cv::Mat *dst, cv::Mat input){
 	}
 }
 
-void Layer::processTempBack(cv::Mat *dst, cv::Mat input){
+void Layer::processTempBack(cv::Mat *dst, cv::Mat input, cv::Mat *firstRow){
 	cv::Mat tInput;
 	int j;
 
 	tInput.create(input.rows, input.cols+1, CV_32FC1);
+
 	for(int i = 0; i < input.rows; i++){
 		for(j = 0; j < input.cols; j++)
 			tInput.at<float>(i,j) = (float)input.at<float>(i,j);
@@ -138,6 +139,8 @@ void Layer::processTempBack(cv::Mat *dst, cv::Mat input){
 	}
 
 	dst->create(input.rows, m_prevLayer->n_units, CV_32FC1);
+	firstRow->create(1, m_prevLayer->n_units, CV_32FC1);
+	
 	cv::Mat tW;
 	tW.create(m_weight.cols+1, m_weight.rows, CV_32FC1);
 	for(int i = 0; i < tW.rows; i++){
@@ -150,12 +153,16 @@ void Layer::processTempBack(cv::Mat *dst, cv::Mat input){
 		}
 	}
 
+	if(firstRow != NULL)		*firstRow = tInput.row(0) * tW;
 	*dst = tInput * tW;
 
 	for(int i = 0; i < dst->rows; i++){
 		for(j = 0; j < dst->cols; j++)
 			dst->at<float>(i,j) = sampling(sigmoid(dst->at<float>(i,j)));
 	}
+
+	for(int i = 0; i < firstRow->cols; i++)
+		firstRow->at<float>(0,i) = sampling(sigmoid(firstRow->at<float>(0,i)));
 }
 
 void Layer::ApplyGrad(cv::Mat wGrad, cv::Mat bGrad, cv::Mat cGrad){

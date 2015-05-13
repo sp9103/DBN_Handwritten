@@ -22,7 +22,7 @@ public:
 	/*바로 이전 데이터를 넣고 현재 레이어 출력값을냄(현재 레이어가 hidden)*/
 	void processTempData(cv::Mat *dst, cv::Mat input);
 	/*hidden Layer의 값을 넣고 back process 수행*/
-	void processTempBack(cv::Mat *dst, cv::Mat input);
+	void processTempBack(cv::Mat *dst, cv::Mat input, cv::Mat *firstRow);
 
 	void ApplyGrad(cv::Mat wGrad, cv::Mat bGrad, cv::Mat cGrad);
 

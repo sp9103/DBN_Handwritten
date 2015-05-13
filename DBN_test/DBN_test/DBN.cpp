@@ -3,6 +3,8 @@
 DBN::DBN(void)
 {
 	srand(time(NULL));
+
+	m_NEpoch = 0;
 }
 
 
@@ -42,20 +44,24 @@ void DBN::Training(){
 	float tgrad = 0.0f;
 	int _start, _super, _phase;
 	int batchCount = 0;
+	int prevEpoch = 0;
 
 	InitNetwork();
 
 	//RBMLayerload("Layer1Data.bin", &hidden[0]);
 
 	//unsupervised training - 각 RBM 학습
-	printf("Unsupervised Training phase start\n");
-	BatchOpen("Data\\train-images.idx3-ubyte", "");
-
 	_start = clock();
+	printf("Unsupervised Training phase start\n");
+	printf("\nData load from file....\n");
+	BatchOpen("Data\\train-images.idx3-ubyte", "");
+	printf("Data load Complete! (%dms)\n", clock() - _start);
+
 	for(int i = 0; i < LAYERHEIGHT-1; i++){
 		printf("[%d] RBM Training...\n", i+1);
 		batchCount = 0;
 		_phase = clock();
+		m_NEpoch = 0;
 
 		while(1){
 			cv::Mat miniBatch;
@@ -81,14 +87,19 @@ void DBN::Training(){
 			}
 
 			//Termination condition
-			printf("Layer[%d] - [%d] Batch calculated, Max gradient : %f\n", i+1, ++batchCount, tgrad);
-			if(GRADTHRESHOLD > tgrad){
-				//각 RBM Training Data를 저장함
-				char tbuf[256];
-				sprintf(tbuf, "Layer%dData.bin", i+1);
-				RBMLayersave(tbuf, hidden[i]);
+			printf("[%d] Batch train Complete!\n", ++batchCount);
+			if(m_NEpoch > NEPOCH){
+				printf("Layer[%d] train Complete!\n");
+				batchCount = 0;
 				break;
 			}
+
+			//weight visualize
+			if(prevEpoch != m_NEpoch){
+				WeightVis(hidden[i]);
+			}
+
+			prevEpoch = m_NEpoch;
 		}
 
 		printf("Complete! (%dms)\n", clock() - _phase);
@@ -114,7 +125,10 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	float tgrad = 0.0f;
 	cv::Mat wGrad, bGrad, cGrad;
 	cv::Mat x1, xk, h1, hk;
+	cv::Mat xkF;						//디버깅용 첫째 로우만 관리
+	int _start;
 
+	_start = clock();
 	h1.create(minibatch.rows, layer->getUnitNum(), CV_32FC1);
 	hk.create(minibatch.rows, layer->getUnitNum(), CV_32FC1);
 
@@ -122,38 +136,49 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	//k-step Contrast Divergence
 	MatCopy(minibatch, &x1);
 	MatCopy(minibatch, &xk);
+	/*printf("RBM update Init (%dms)\n", clock() - _start);
+	_start = clock();*/
 	layer->processTempData(&h1, x1);
 	MatCopy(h1, &hk);
 	for(int k = 1; k < step; k++){
-		layer->processTempBack(&xk, h1);
-		layer->processTempData(&hk, xk);
+		layer->processTempBack(&xk, h1, &xkF);
 	}
+	/*printf("RBM CD (%dms)\n", clock() - _start);
+	_start = clock();*/
 
 #ifdef DEBUG_VISIBLE
 	//맨 하위 일때만
 	if(layer->m_prevLayer->m_prevLayer == NULL){
-		DataSingleVis(xk, "Reconstruct");
+		DataSingleVis(xkF, "Reconstruct");
 		cv::waitKey(1);
 	}else if(layer->m_prevLayer->m_prevLayer->m_prevLayer == NULL){								//두번째
 		cv::Mat debugXk;
-		layer->m_prevLayer->processTempBack(&debugXk, xk);
+		layer->m_prevLayer->processTempBack(&debugXk, xk, NULL);
 		DataSingleVis(debugXk, "Reconstruct");
 		cv::waitKey(1);
 	}
 #endif
 
-	//gradient 계산
-	cv::Mat tprob = layer->calcProbH(xk);
+	cv::Mat AVx1, AVxk, AVh1;
 
-	wGrad = calcW(h1, x1, tprob, xk);
-	bGrad = calcB(x1, xk);
-	cGrad = calcC(h1, tprob);
+	cv::reduce(x1, AVx1, 0, CV_REDUCE_AVG);
+	cv::reduce(xk, AVxk, 0, CV_REDUCE_AVG);
+	cv::reduce(h1, AVh1, 0, CV_REDUCE_AVG);
+
+	//gradient 계산
+	cv::Mat tprob = layer->calcProbH(AVx1);
+	wGrad = calcW(AVh1, AVx1, tprob, AVxk);
+	bGrad = calcB(AVx1, AVxk);
+	cGrad = calcC(AVh1, tprob);
+	//printf("RBM update calculate (%dms)\n", clock() - _start);
+	//_start = clock();
 
 	//결과 반영
 	layer->ApplyGrad(wGrad, bGrad, cGrad);
+	//printf("RBM update apply (%dms)\n\n", clock() - _start);
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	tgrad = MatMaxEle(wGrad) / EPSILON;
+	//tgrad = MatMaxEle(wGrad) / EPSILON;
 
 	return tgrad;
 }
@@ -211,6 +236,7 @@ cv::Mat DBN::calcB(cv::Mat x1, cv::Mat xk){
 
 cv::Mat DBN::calcC(cv::Mat h1, cv::Mat prob){
 	cv::Mat result;
+	cv::Mat tAvg;
 
 	result.create(1, h1.cols, CV_32FC1);
 	MatZeros(&result);
@@ -219,8 +245,10 @@ cv::Mat DBN::calcC(cv::Mat h1, cv::Mat prob){
 		for(int j = 0; j < h1.cols; j++){
 			result.at<float>(0,j) += EPSILON * (h1.at<float>(i,j) - prob.at<float>(0,j)) / (float)h1.rows;
 		}
-
 	}
+
+	/*cv::reduce((h1 - prob), result, 0, CV_REDUCE_AVG);
+	result = EPSILON * result;*/
 
 	return result.clone();
 }
@@ -229,7 +257,6 @@ cv::Mat DBN::calcW(cv::Mat h1, cv::Mat x1, cv::Mat prob, cv::Mat xk){
 	cv::Mat result;
 
 	result.create(x1.cols, h1.cols, CV_32FC1);
-	MatZeros(&result);
 
 	result = x1.t()*h1 - xk.t()*prob;
 
@@ -475,7 +502,7 @@ void DBN::BatchOpen(char *DataName, char* LabelName){
 		m_box[i] = i;
 
 }
-void DBN::BatchRandLoad(cv::Mat *batch, cv::Mat *Label){
+int DBN::BatchRandLoad(cv::Mat *batch, cv::Mat *Label){
 	static int count = 0;
 	
 	if(count < 1){
@@ -502,11 +529,24 @@ void DBN::BatchRandLoad(cv::Mat *batch, cv::Mat *Label){
 	count += BATCHSIZE;
 	if(count >= m_Dataloader.getDataCount()){
 		count = 0;
+		m_NEpoch++;
+		return 1;
 	}
 
+	return 0;
 }
 
 void DBN::BatchClose(){
 	m_Dataloader.FileClose();
 	m_Labelloader.FileClose();
+}
+
+void DBN::WeightVis(Layer src){
+	cv::Mat board;
+	board.create(28 * 25, 28 * 20, CV_32FC1);
+
+	//일단 보류
+
+	cv::imshow("Weight", board);
+	cv::waitKey(1);
 }

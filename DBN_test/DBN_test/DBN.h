@@ -32,10 +32,11 @@ private:
 
 	//랜덤
 	void BatchOpen(char *DataName, char* LabelName);
-	void BatchRandLoad(cv::Mat *batch, cv::Mat *Label);
+	int BatchRandLoad(cv::Mat *batch, cv::Mat *Label);
 	void BatchClose();
 	int *m_box;
 	cv::Mat m_DataSet, m_LabelSet;
+	int m_NEpoch;
 
 	/*이미 할당된 메트릭스 원소를 모두 0으로 초기화*/
 	void MatZeros(cv::Mat *target);
@@ -56,6 +57,7 @@ private:
 	//Debug용 함수
 	void DataVis(cv::Mat data, cv::Mat data2);
 	void DataSingleVis(cv::Mat data, char *windowName);
+	void WeightVis(Layer src);							//Weight를 그림 맨 마지막 RBM만
 
 	void RBMsave(char *fileName);
 	void RBMLoad(char *fileName);
