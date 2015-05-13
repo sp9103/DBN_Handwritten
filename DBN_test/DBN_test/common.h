@@ -18,3 +18,5 @@ using namespace std;
 #define NHIDDEN1	500
 #define NHIDDEN2	400
 #define NHIDDEN3	200
+
+#define SWAP(x,y,t) ((t)=(x), (x)=(y), (y)=(t))

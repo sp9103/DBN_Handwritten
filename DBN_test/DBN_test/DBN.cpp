@@ -2,6 +2,7 @@
 
 DBN::DBN(void)
 {
+	srand(time(NULL));
 }
 
 
@@ -44,19 +45,22 @@ void DBN::Training(){
 
 	InitNetwork();
 
-	RBMLayerload("Layer1Data.bin", &hidden[0]);
+	//RBMLayerload("Layer1Data.bin", &hidden[0]);
 
 	//unsupervised training - °¢ RBM ÇÐ½À
 	printf("Unsupervised Training phase start\n");
+	BatchOpen("Data\\train-images.idx3-ubyte", "");
+
 	_start = clock();
-	for(int i = 1; i < LAYERHEIGHT-1; i++){
+	for(int i = 0; i < LAYERHEIGHT-1; i++){
 		printf("[%d] RBM Training...\n", i+1);
 		batchCount = 0;
 		_phase = clock();
 
 		while(1){
 			cv::Mat miniBatch;
-			BatchLoad(&miniBatch, NULL, "Data\\train-images.idx3-ubyte", "");
+			/*BatchLoad(&miniBatch, NULL, "Data\\train-images.idx3-ubyte", "");*/
+			BatchRandLoad(&miniBatch, NULL);
 
 #ifdef DEBUG_VISIBLE
 			//Debug visualization
@@ -90,6 +94,7 @@ void DBN::Training(){
 		printf("Complete! (%dms)\n", clock() - _phase);
 	}
 	printf("Unsupervised Training complete (%dms)\n", clock() - _start);
+	BatchClose();
 
 	RBMsave("RBMDATA.bin");
 
@@ -456,4 +461,55 @@ void DBN::DataSingleVis(cv::Mat data, char *windowName){
 	}
 
 	cv::imshow(windowName, fic);
+}
+
+void DBN::BatchOpen(char *DataName, char* LabelName){
+
+	m_Dataloader.FileOpen(DataName);
+	m_Dataloader.ImageDataLoad(m_Dataloader.getDataCount(), &m_DataSet);
+
+	if(strlen(LabelName) > 2){
+		m_Labelloader.FileOpen(LabelName);
+		m_Labelloader.LabelDataLoad(m_Labelloader.getDataCount(), &m_LabelSet);
+	}
+
+	m_box = (int *)malloc(sizeof(int)*m_Dataloader.getDataCount());
+	for(int i = 0; i < m_Dataloader.getDataCount(); i++)
+		m_box[i] = i;
+
+}
+void DBN::BatchRandLoad(cv::Mat *batch, cv::Mat *Label){
+	static int count = 0;
+	
+	if(count < 1){
+		//Random box mixing
+		for(int i = 0; i < m_Dataloader.getDataCount(); i++){
+			int temp;
+			int trand = rand() % m_Dataloader.getDataCount();
+			SWAP(m_box[i], m_box[trand], temp);
+		}
+	}
+
+	if(batch != NULL){
+		batch->create(BATCHSIZE, 28*28, CV_32FC1);
+		for(int i = 0; i < BATCHSIZE; i++){
+			m_DataSet.row(m_box[count + i]).copyTo(batch->row(i));
+		}
+	}
+	if(Label != NULL){
+		Label->create(BATCHSIZE, 28*28, CV_32FC1);
+		for(int i = 0; i < BATCHSIZE; i++){
+			m_LabelSet.row(m_box[count + i]).copyTo(Label->row(i));
+		}
+	}
+	count += BATCHSIZE;
+	if(count >= m_Dataloader.getDataCount()){
+		count = 0;
+	}
+
+}
+
+void DBN::BatchClose(){
+	m_Dataloader.FileClose();
+	m_Labelloader.FileClose();
 }

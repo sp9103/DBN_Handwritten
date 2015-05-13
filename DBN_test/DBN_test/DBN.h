@@ -30,6 +30,13 @@ private:
 
 	void BatchLoad(cv::Mat *batch, cv::Mat *Label, char* DataName, char* LabelName);
 
+	//랜덤
+	void BatchOpen(char *DataName, char* LabelName);
+	void BatchRandLoad(cv::Mat *batch, cv::Mat *Label);
+	void BatchClose();
+	int *m_box;
+	cv::Mat m_DataSet, m_LabelSet;
+
 	/*이미 할당된 메트릭스 원소를 모두 0으로 초기화*/
 	void MatZeros(cv::Mat *target);
 
