@@ -8,8 +8,8 @@
 using namespace std;
 
 #define BATCHSIZE 100
-#define GRADTHRESHOLD 0.1
-#define EPSILON		0.01
+#define GRADTHRESHOLD 0.12
+#define EPSILON		0.02
 #define CDStep		2
 
 //Deep belif network - Layer information

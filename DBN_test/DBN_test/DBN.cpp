@@ -58,6 +58,11 @@ void DBN::Training(){
 			cv::Mat miniBatch;
 			BatchLoad(&miniBatch, NULL, "Data\\train-images.idx3-ubyte", "");
 
+#ifdef DEBUG_VISIBLE
+			//Debug visualization
+			DataSingleVis(miniBatch, "Original");
+#endif
+
 			//Bottom Layer training
 			if(i == 0){
 				//Input이 이미지 그대로 들어감
@@ -119,18 +124,21 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 		layer->processTempData(&hk, xk);
 	}
 
+#ifdef DEBUG_VISIBLE
 	//맨 하위 일때만
 	if(layer->m_prevLayer->m_prevLayer == NULL){
-		DataVis(minibatch, xk);
+		DataSingleVis(xk, "Reconstruct");
+		cv::waitKey(1);
 	}
 
 	//두번째 레이어일때
 	if(layer->m_prevLayer->m_prevLayer->m_prevLayer == NULL){
-		cv::Mat debugX, debugXk;
-		layer->m_prevLayer->processTempBack(&debugX, x1);
+		cv::Mat debugXk;
 		layer->m_prevLayer->processTempBack(&debugXk, xk);
-		DataVis(debugX, debugXk);
+		DataSingleVis(debugXk, "Reconstruct");
+		cv::waitKey(1);
 	}
+#endif
 
 	//gradient 계산
 	cv::Mat tprob = layer->calcProbH(xk);
@@ -437,4 +445,15 @@ void DBN::RBMLayerload(char *fileName, Layer *dst){
 
 	fclose(fp);
 	printf("Load complete!\n");
+}
+
+void DBN::DataSingleVis(cv::Mat data, char *windowName){
+	cv::Mat fic;
+	fic.create(28, 28, CV_8UC1);
+
+	for(int i = 0; i < data.cols; i++){
+		fic.at<uchar>(i/28,i%28) = (data.at<float>(0,i) > 0.0f) ? 255 : 0;
+	}
+
+	cv::imshow(windowName, fic);
 }

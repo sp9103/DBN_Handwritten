@@ -3,6 +3,8 @@
 #include "LabelLoader.h"
 #include "Layer.h"
 
+//#define DEBUG_VISIBLE
+
 class DBN
 {
 public:
@@ -46,6 +48,7 @@ private:
 
 	//Debug¿ë ÇÔ¼ö
 	void DataVis(cv::Mat data, cv::Mat data2);
+	void DataSingleVis(cv::Mat data, char *windowName);
 
 	void RBMsave(char *fileName);
 	void RBMLoad(char *fileName);
