@@ -134,10 +134,7 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	if(layer->m_prevLayer->m_prevLayer == NULL){
 		DataSingleVis(xk, "Reconstruct");
 		cv::waitKey(1);
-	}
-
-	//두번째 레이어일때
-	if(layer->m_prevLayer->m_prevLayer->m_prevLayer == NULL){
+	}else if(layer->m_prevLayer->m_prevLayer->m_prevLayer == NULL){								//두번째
 		cv::Mat debugXk;
 		layer->m_prevLayer->processTempBack(&debugXk, xk);
 		DataSingleVis(debugXk, "Reconstruct");

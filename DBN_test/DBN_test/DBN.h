@@ -3,7 +3,7 @@
 #include "LabelLoader.h"
 #include "Layer.h"
 
-//#define DEBUG_VISIBLE
+#define DEBUG_VISIBLE
 
 class DBN
 {
