@@ -57,7 +57,6 @@ private:
 	//Debug용 함수
 	void DataVis(cv::Mat data, cv::Mat data2);
 	void DataSingleVis(cv::Mat data, char *windowName);
-	void WeightVis(Layer src);							//Weight를 그림 맨 마지막 RBM만
 
 	void RBMsave(char *fileName);
 	void RBMLoad(char *fileName);

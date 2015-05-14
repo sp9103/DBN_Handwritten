@@ -120,6 +120,12 @@ void Layer::processTempData(cv::Mat *dst, cv::Mat input){
 
 	*dst = tInput * tW;
 
+	///////////////AVG
+	//cv::Mat AvgInput;
+
+	//cv::reduce(tInput, AvgInput, 0, CV_REDUCE_AVG);
+	//*dst = AvgInput * tW;
+
 	for(int i = 0; i < dst->rows; i++){
 		for(j = 0; j < dst->cols; j++)
 			dst->at<float>(i,j) = sampling(sigmoid(dst->at<float>(i,j)));
@@ -139,7 +145,7 @@ void Layer::processTempBack(cv::Mat *dst, cv::Mat input, cv::Mat *firstRow){
 	}
 
 	dst->create(input.rows, m_prevLayer->n_units, CV_32FC1);
-	firstRow->create(1, m_prevLayer->n_units, CV_32FC1);
+	//firstRow->create(1, m_prevLayer->n_units, CV_32FC1);
 	
 	cv::Mat tW;
 	tW.create(m_weight.cols+1, m_weight.rows, CV_32FC1);
@@ -154,15 +160,22 @@ void Layer::processTempBack(cv::Mat *dst, cv::Mat input, cv::Mat *firstRow){
 	}
 
 	if(firstRow != NULL)		*firstRow = tInput.row(0) * tW;
+
+	///////////////AVG
+	/*cv::Mat AvgInput;
+
+	cv::reduce(tInput, AvgInput, 0, CV_REDUCE_AVG);*/
+	
 	*dst = tInput * tW;
+	//*dst = AvgInput * tW;
 
 	for(int i = 0; i < dst->rows; i++){
 		for(j = 0; j < dst->cols; j++)
 			dst->at<float>(i,j) = sampling(sigmoid(dst->at<float>(i,j)));
 	}
 
-	for(int i = 0; i < firstRow->cols; i++)
-		firstRow->at<float>(0,i) = sampling(sigmoid(firstRow->at<float>(0,i)));
+	//for(int i = 0; i < firstRow->cols; i++)
+	//	firstRow->at<float>(0,i) = sampling(sigmoid(firstRow->at<float>(0,i)));
 }
 
 void Layer::ApplyGrad(cv::Mat wGrad, cv::Mat bGrad, cv::Mat cGrad){
@@ -214,4 +227,42 @@ void Layer::MatCopy(cv::Mat src, cv::Mat *dst){
 			dst->at<float>(i,j) = src.at<float>(i,j);
 		}
 	}
+}
+
+void Layer::WeightVis(){
+	cv::Mat tboard, tpatch, normpatch;
+	double tmin, tmax;
+
+	tboard.create(28*20, 28*25, CV_32FC1);
+	tpatch.create(28,28, CV_32FC1);
+	normpatch.create(28,28, CV_32FC1);
+
+	for(int i = 0; i < m_weight.cols; i++){
+		//create patch
+		for(int j = 0; j < m_weight.rows; j++){
+			tpatch.at<float>(j/28,j%28) = m_weight.at<float>(j,i);
+		}
+
+		//normalize
+		cv::minMaxLoc(tpatch, &tmin);
+		tpatch = tpatch - tmin;
+		cv::minMaxLoc(tpatch, &tmin, &tmax);
+		tpatch = tpatch / tmax;
+		cv::minMaxLoc(tpatch, &tmin, &tmax);
+
+		//attach board
+		cv::Point startP;
+		startP.x = (i % 25) * 28;
+		startP.y = (i / 25) * 28;
+
+		for(int j = 0; j < tpatch.rows; j++){
+			for(int k = 0; k < tpatch.cols; k++){
+				float val = tpatch.at<float>(j,k);
+				tboard.at<float>(startP.y+j,startP.x+k) = val;
+			}
+		}
+	}
+	
+	cv::imshow("Weight vis", tboard);
+	cv::waitKey(0);
 }

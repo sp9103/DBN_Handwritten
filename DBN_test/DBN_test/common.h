@@ -11,7 +11,7 @@ using namespace std;
 #define GRADTHRESHOLD 0.12
 #define EPSILON		0.02
 #define CDStep		2
-#define NEPOCH		10
+#define NEPOCH		20
 
 //Deep belif network - Layer information
 #define LAYERHEIGHT 4

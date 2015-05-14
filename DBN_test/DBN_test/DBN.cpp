@@ -48,7 +48,8 @@ void DBN::Training(){
 
 	InitNetwork();
 
-	//RBMLayerload("Layer1Data.bin", &hidden[0]);
+	RBMLayerload("Layer1Data.bin", &hidden[0]);
+	//hidden[0].WeightVis();
 
 	//unsupervised training - 각 RBM 학습
 	_start = clock();
@@ -57,7 +58,7 @@ void DBN::Training(){
 	BatchOpen("Data\\train-images.idx3-ubyte", "");
 	printf("Data load Complete! (%dms)\n", clock() - _start);
 
-	for(int i = 0; i < LAYERHEIGHT-1; i++){
+	for(int i = 1; i < LAYERHEIGHT-1; i++){
 		printf("[%d] RBM Training...\n", i+1);
 		batchCount = 0;
 		_phase = clock();
@@ -87,17 +88,22 @@ void DBN::Training(){
 			}
 
 			//Termination condition
+			printf("gradient MAx : %f\n", tgrad);
 			printf("[%d] Batch train Complete!\n", ++batchCount);
 			if(m_NEpoch > NEPOCH){
 				printf("Layer[%d] train Complete!\n");
 				batchCount = 0;
+
+				char buf[256];
+				sprintf(buf, "Layer%dInfo.bin", i+1);
+				RBMLayersave(buf, hidden[i]);
 				break;
 			}
 
 			//weight visualize
-			if(prevEpoch != m_NEpoch){
+			/*if(prevEpoch != m_NEpoch){
 				WeightVis(hidden[i]);
-			}
+			}*/
 
 			prevEpoch = m_NEpoch;
 		}
@@ -136,15 +142,15 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	//k-step Contrast Divergence
 	MatCopy(minibatch, &x1);
 	MatCopy(minibatch, &xk);
-	/*printf("RBM update Init (%dms)\n", clock() - _start);
-	_start = clock();*/
+	printf("RBM update Init (%dms)\n", clock() - _start);
+	_start = clock();
 	layer->processTempData(&h1, x1);
 	MatCopy(h1, &hk);
 	for(int k = 1; k < step; k++){
 		layer->processTempBack(&xk, h1, &xkF);
 	}
-	/*printf("RBM CD (%dms)\n", clock() - _start);
-	_start = clock();*/
+	printf("RBM CD (%dms)\n", clock() - _start);
+	_start = clock();
 
 #ifdef DEBUG_VISIBLE
 	//맨 하위 일때만
@@ -159,17 +165,17 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	}
 #endif
 
-	cv::Mat AVx1, AVxk, AVh1;
+	//cv::Mat AVx1, AVxk, AVh1;
 
-	cv::reduce(x1, AVx1, 0, CV_REDUCE_AVG);
-	cv::reduce(xk, AVxk, 0, CV_REDUCE_AVG);
-	cv::reduce(h1, AVh1, 0, CV_REDUCE_AVG);
+	//cv::reduce(x1, AVx1, 0, CV_REDUCE_AVG);
+	//cv::reduce(xk, AVxk, 0, CV_REDUCE_AVG);
+	//cv::reduce(h1, AVh1, 0, CV_REDUCE_AVG);
 
 	//gradient 계산
-	cv::Mat tprob = layer->calcProbH(AVx1);
-	wGrad = calcW(AVh1, AVx1, tprob, AVxk);
-	bGrad = calcB(AVx1, AVxk);
-	cGrad = calcC(AVh1, tprob);
+	cv::Mat tprob = layer->calcProbH(x1);
+	wGrad = calcW(h1, x1, tprob, xk);
+	bGrad = calcB(x1, xk);
+	cGrad = calcC(h1, tprob);
 	//printf("RBM update calculate (%dms)\n", clock() - _start);
 	//_start = clock();
 
@@ -178,7 +184,7 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	//printf("RBM update apply (%dms)\n\n", clock() - _start);
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	//tgrad = MatMaxEle(wGrad) / EPSILON;
+	tgrad = MatMaxEle(wGrad) / EPSILON;
 
 	return tgrad;
 }
@@ -539,14 +545,4 @@ int DBN::BatchRandLoad(cv::Mat *batch, cv::Mat *Label){
 void DBN::BatchClose(){
 	m_Dataloader.FileClose();
 	m_Labelloader.FileClose();
-}
-
-void DBN::WeightVis(Layer src){
-	cv::Mat board;
-	board.create(28 * 25, 28 * 20, CV_32FC1);
-
-	//일단 보류
-
-	cv::imshow("Weight", board);
-	cv::waitKey(1);
 }

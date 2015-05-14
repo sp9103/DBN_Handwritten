@@ -37,6 +37,8 @@ public:
 	cv::Mat m_b;									//bias - visible
 	cv::Mat m_c;									//bias - hidden
 
+	void WeightVis();
+
 private:
 	int n_units;
 
