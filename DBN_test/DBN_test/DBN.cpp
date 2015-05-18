@@ -52,9 +52,11 @@ void DBN::Training(){
 
 	RBMLayerload("Layer1Info.bin", &hidden[0]);
 	RBMLayerload("Layer2Info.bin", &hidden[1]);
+	RBMLayerload("Layer3Info.bin", &hidden[2]);
 	hidden[0].WeightVis();
 
 	//unsupervised training - 각 RBM 학습
+#ifdef RBM_TRAINING
 	_start = clock();
 	printf("Unsupervised Training phase start\n");
 	printf("\nData load from file....\n");
@@ -103,11 +105,6 @@ void DBN::Training(){
 				break;
 			}
 
-			//weight visualize
-			/*if(prevEpoch != m_NEpoch){
-			WeightVis(hidden[i]);
-			}*/
-
 			prevEpoch = m_NEpoch;
 		}
 
@@ -115,6 +112,7 @@ void DBN::Training(){
 	}
 	printf("Unsupervised Training complete (%dms)\n", clock() - _start);
 	BatchClose();
+#endif
 
 	//supervised training - full optimization MLP backpropagation
 	printf("\nSupervised Training phase start\n");
@@ -633,4 +631,30 @@ void DBN::FullBackpropagation(){
 
 	}
 	BatchClose();
+}
+
+int DBN::DBNquery(cv::Mat src){
+	int retVal = -1;
+	cv::Mat tInput, tOutput;
+
+	MatCopy(src, &tInput);
+
+	for(int i = 0; i < LAYERHEIGHT; i++){
+		hidden[i].processPresData(&tOutput, tInput);
+		MatCopy(tOutput, &tInput);
+	}
+
+	classLayer.processPresData(&tOutput, tInput);
+
+	//결과중 가장 큰 놈 산출
+	float tmax = -99999.0f;
+	for(int i = 0; i < tOutput.cols; i++){
+		float temp = tOutput.at<float>(0, i);
+		if(tmax < temp){
+			tmax = temp;
+			retVal = i;
+		}
+	}
+
+	return retVal;
 }

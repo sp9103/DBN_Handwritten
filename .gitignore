@@ -2,3 +2,4 @@
 *.lastbuildstate
 *.bin
 *.log
+*.unsuccessfulbuild

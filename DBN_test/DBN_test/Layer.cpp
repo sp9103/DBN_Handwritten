@@ -266,3 +266,35 @@ void Layer::WeightVis(){
 	cv::imshow("Weight vis", tboard);
 	cv::waitKey(0);
 }
+
+void Layer::processPresData(cv::Mat *dst, cv::Mat data){
+	cv::Mat tInput;
+	int j;
+
+	tInput.create(data.rows, data.cols+1, CV_32FC1);
+	for(int i = 0; i < data.rows; i++){
+		for(j = 0; j < data.cols; j++)
+			tInput.at<float>(i,j) = (float)data.at<float>(i,j);
+		tInput.at<float>(i,j) = 1.0f;
+	}
+
+	dst->create(data.rows, n_units, CV_32FC1);
+	cv::Mat tW;
+	tW.create(m_weight.rows+1, m_weight.cols, CV_32FC1);
+	for(int i = 0; i < tW.rows; i++){
+		for(j = 0; j < tW.cols; j++){
+			if(i == tW.rows-1)
+				tW.at<float>(i,j) = m_c.at<float>(0,j);
+
+			else
+				tW.at<float>(i,j) = m_weight.at<float>(i,j);
+		}
+	}
+
+	*dst = tInput * tW;
+
+	for(int i = 0; i < dst->rows; i++){
+		for(j = 0; j < dst->cols; j++)
+			dst->at<float>(i,j) = sigmoid(dst->at<float>(i,j));
+	}
+}

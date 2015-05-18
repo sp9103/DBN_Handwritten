@@ -9,8 +9,7 @@ public:
 	void Init(int unitCount);
 
 	float sampling(float prob);
-
-	void setDataDirect(cv::Mat src);				//Visible node에서만
+	
 	int getUnitNum();
 	void setLayerRelation(Layer *prev, Layer *post);
 
@@ -38,6 +37,8 @@ public:
 	cv::Mat m_c;									//bias - hidden
 
 	void WeightVis();
+
+	void processPresData(cv::Mat *dst, cv::Mat data);		//sampling 없이 플로팅 포인트로 결과를 산출함
 
 private:
 	int n_units;

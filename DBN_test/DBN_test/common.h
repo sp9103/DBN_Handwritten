@@ -9,9 +9,9 @@ using namespace std;
 
 #define BATCHSIZE 100
 #define GRADTHRESHOLD 0.12
-#define EPSILON		0.02
+#define EPSILON		0.005
 #define CDStep		2
-#define NEPOCH		29
+#define NEPOCH		19
 
 //Deep belif network - Layer information
 #define LAYERHEIGHT 4

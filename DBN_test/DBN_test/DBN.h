@@ -3,7 +3,8 @@
 #include "LabelLoader.h"
 #include "Layer.h"
 
-//#define DEBUG_VISIBLE
+#define DEBUG_VISIBLE
+#define RBM_TRAINING
 
 class DBN
 {
@@ -18,6 +19,9 @@ public:
 	void Load(char *fileName);
 
 	void InitNetwork();
+
+	//28*28 이미지 쿼리를 날리면 classification 결과를 산출
+	int DBNquery(cv::Mat src);
 
 private:
 	DataLoader m_Dataloader;
