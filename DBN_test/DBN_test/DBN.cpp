@@ -651,6 +651,7 @@ void DBN::BatchClose(){
 
 void DBN::FullBackpropagation(){
 	cv::Mat miniBatch, BatchLabel;
+	cv::Mat Ok[LAYERHEIGHT];
 
 	BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx3-ubyte");
 
@@ -660,6 +661,21 @@ void DBN::FullBackpropagation(){
 	while(1){
 		BatchRandLoad(&miniBatch, &BatchLabel);
 
+		//Forward process
+		cv::Mat tInput;
+		MatCopy(miniBatch, &tInput);
+		for(int i = 0; i < LAYERHEIGHT-1; i++){
+			hidden[i].processPresData(&Ok[i], tInput);
+			MatCopy(Ok[i], &tInput);
+		}
+		classLayer.processPresData(&Ok[LAYERHEIGHT], tInput);
+
+		//Backward process
+
+
+		for(int i = LAYERHEIGHT-2; i > 0; i--){
+			
+		}
 
 		if(m_NEpoch > NEPOCH){
 			break;
@@ -673,14 +689,7 @@ int DBN::DBNquery(cv::Mat src){
 	int retVal = -1;
 	cv::Mat tInput, tOutput;
 
-	MatCopy(src, &tInput);
-
-	for(int i = 0; i < LAYERHEIGHT-1; i++){
-		hidden[i].processPresData(&tOutput, tInput);
-		MatCopy(tOutput, &tInput);
-	}
-
-	classLayer.processPresData(&tOutput, tInput);
+	ForwardProcess(src, &tOutput);
 
 	//결과중 가장 큰 놈 산출
 	FindMaxIdx(tOutput);
@@ -701,4 +710,17 @@ int DBN::FindMaxIdx(cv::Mat src){
 	}
 
 	return retVal;
+}
+
+void DBN::ForwardProcess(cv::Mat src, cv::Mat *dst){
+	cv::Mat tInput, tOutput;
+
+	MatCopy(src, &tInput);
+
+	for(int i = 0; i < LAYERHEIGHT-1; i++){
+		hidden[i].processPresData(&tOutput, tInput);
+		MatCopy(tOutput, &tInput);
+	}
+
+	classLayer.processPresData(&tOutput, tInput);
 }

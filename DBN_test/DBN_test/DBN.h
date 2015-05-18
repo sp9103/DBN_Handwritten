@@ -72,6 +72,7 @@ private:
 	//full optimization
 	void FullBackpropagation();
 
+	void ForwardProcess(cv::Mat src, cv::Mat *dst);
 	int FindMaxIdx(cv::Mat src);
 };
 
