@@ -3,7 +3,7 @@
 #include "LabelLoader.h"
 #include "Layer.h"
 
-#define DEBUG_VISIBLE
+//#define DEBUG_VISIBLE
 
 class DBN
 {
@@ -25,6 +25,7 @@ private:
 
 	Layer visible;
 	Layer hidden[LAYERHEIGHT-1];
+	Layer classLayer;																//마지막 Classification을 위한 레이어
 
 	float RBMupdata(cv::Mat x1, float e, Layer *layer, int step);
 
@@ -58,10 +59,13 @@ private:
 	void DataVis(cv::Mat data, cv::Mat data2);
 	void DataSingleVis(cv::Mat data, char *windowName);
 
-	void RBMsave(char *fileName);
-	void RBMLoad(char *fileName);
+	void Netsave(char *fileName);
+	void NetLoad(char *fileName);
 
 	void RBMLayersave(char *fileName, Layer src);
 	void RBMLayerload(char *fileName, Layer *dst);
+
+	//full optimization
+	void FullBackpropagation();
 };
 

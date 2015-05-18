@@ -17,11 +17,13 @@ void DBN::InitNetwork(){
 	hidden[0].Init(NHIDDEN1);
 	hidden[1].Init(NHIDDEN2);
 	hidden[2].Init(NHIDDEN3);
+	classLayer.Init(NOUTPUT);
 
 	visible.setLayerRelation(NULL, &hidden[0]);
 	hidden[0].setLayerRelation(&visible, &hidden[1]);
 	hidden[1].setLayerRelation(&hidden[0], &hidden[2]);
-	hidden[2].setLayerRelation(&hidden[1], NULL);
+	hidden[2].setLayerRelation(&hidden[1], &classLayer);
+	classLayer.setLayerRelation(&hidden[2], NULL);
 }
 
 void DBN::save(char *fileName){
@@ -48,8 +50,9 @@ void DBN::Training(){
 
 	InitNetwork();
 
-	RBMLayerload("Layer1Data.bin", &hidden[0]);
-	//hidden[0].WeightVis();
+	RBMLayerload("Layer1Info.bin", &hidden[0]);
+	RBMLayerload("Layer2Info.bin", &hidden[1]);
+	hidden[0].WeightVis();
 
 	//unsupervised training - 각 RBM 학습
 	_start = clock();
@@ -58,7 +61,7 @@ void DBN::Training(){
 	BatchOpen("Data\\train-images.idx3-ubyte", "");
 	printf("Data load Complete! (%dms)\n", clock() - _start);
 
-	for(int i = 1; i < LAYERHEIGHT-1; i++){
+	for(int i = 2; i < LAYERHEIGHT-1; i++){
 		printf("[%d] RBM Training...\n", i+1);
 		batchCount = 0;
 		_phase = clock();
@@ -91,7 +94,7 @@ void DBN::Training(){
 			printf("gradient MAx : %f\n", tgrad);
 			printf("[%d] Batch train Complete!\n", ++batchCount);
 			if(m_NEpoch > NEPOCH){
-				printf("Layer[%d] train Complete!\n");
+				printf("Layer[%d] train Complete!\n", i+1);
 				batchCount = 0;
 
 				char buf[256];
@@ -102,7 +105,7 @@ void DBN::Training(){
 
 			//weight visualize
 			/*if(prevEpoch != m_NEpoch){
-				WeightVis(hidden[i]);
+			WeightVis(hidden[i]);
 			}*/
 
 			prevEpoch = m_NEpoch;
@@ -113,12 +116,11 @@ void DBN::Training(){
 	printf("Unsupervised Training complete (%dms)\n", clock() - _start);
 	BatchClose();
 
-	RBMsave("RBMDATA.bin");
-
 	//supervised training - full optimization MLP backpropagation
 	printf("\nSupervised Training phase start\n");
 	_super = clock();
-
+	FullBackpropagation();
+	Netsave("FullNetworkData.bin");
 
 	printf("Supervised Training phase complete (%dms)\n", clock() - _super);
 }
@@ -133,6 +135,7 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	cv::Mat x1, xk, h1, hk;
 	cv::Mat xkF;						//디버깅용 첫째 로우만 관리
 	int _start;
+	static int VisFrequency = 0;
 
 	_start = clock();
 	h1.create(minibatch.rows, layer->getUnitNum(), CV_32FC1);
@@ -158,11 +161,23 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 		DataSingleVis(xkF, "Reconstruct");
 		cv::waitKey(1);
 	}else if(layer->m_prevLayer->m_prevLayer->m_prevLayer == NULL){								//두번째
+		//if(VisFrequency == 0){
 		cv::Mat debugXk;
 		layer->m_prevLayer->processTempBack(&debugXk, xk, NULL);
 		DataSingleVis(debugXk, "Reconstruct");
 		cv::waitKey(1);
+		//}
+
+		//VisFrequency = (VisFrequency+1) % 10;
+	}else{
+		cv::Mat debugXk;
+		layer->m_prevLayer->processTempBack(&debugXk, xk, NULL);
+		layer->m_prevLayer->m_prevLayer->processTempBack(&debugXk, debugXk, NULL);
+		DataSingleVis(debugXk, "Reconstruct");
+		cv::waitKey(1);
 	}
+	printf("Visualize (%dms)\n", clock() - _start);
+	_start = clock();
 #endif
 
 	//cv::Mat AVx1, AVxk, AVh1;
@@ -311,7 +326,7 @@ void DBN::MatCopy(cv::Mat src, cv::Mat *dst){
 	}
 }
 
-void DBN::RBMsave(char *fileName){
+void DBN::Netsave(char *fileName){
 	printf("Training result writing..\n");
 	FILE *fp = fopen(fileName, "wb");
 	//SaveFile
@@ -324,6 +339,8 @@ void DBN::RBMsave(char *fileName){
 	temp = NHIDDEN2;
 	fwrite(&temp, sizeof(int), 1, fp);
 	temp = NHIDDEN3;
+	fwrite(&temp, sizeof(int), 1, fp);
+	temp = NOUTPUT;
 	fwrite(&temp, sizeof(int), 1, fp);
 
 	//Weight & biase write
@@ -353,11 +370,34 @@ void DBN::RBMsave(char *fileName){
 		}
 	}
 
+	for(int j = 0; j < classLayer.m_weight.rows; j++){
+		for(int k = 0; k < classLayer.m_weight.cols; k++){
+			float tf = classLayer.m_weight.at<float>(j,k);
+			fwrite(&tf, sizeof(float), 1, fp);
+		}
+	}
+
+	//b
+	for(int j = 0; j < classLayer.m_b.rows; j++){
+		for(int k = 0; k < classLayer.m_b.cols; k++){
+			float tf = classLayer.m_b.at<float>(j,k);
+			fwrite(&tf, sizeof(float), 1, fp);
+		}
+	}
+
+	//c
+	for(int j = 0; j < classLayer.m_c.rows; j++){
+		for(int k = 0; k < classLayer.m_c.cols; k++){
+			float tf = classLayer.m_c.at<float>(j,k);
+			fwrite(&tf, sizeof(float), 1, fp);
+		}
+	}
+
 	fclose(fp);
 	printf("Writing complete!\n");
 }
 
-void DBN::RBMLoad(char *fileName){
+void DBN::NetLoad(char *fileName){
 	printf("Training result Loading..\n");
 	FILE *fp = fopen(fileName, "rb");
 	//SaveFile
@@ -365,6 +405,7 @@ void DBN::RBMLoad(char *fileName){
 	fread(&temp,sizeof(int),1, fp);			//Layer Height write
 
 	//Layer unit information write
+	fread(&temp, sizeof(int), 1, fp);
 	fread(&temp, sizeof(int), 1, fp);
 	fread(&temp, sizeof(int), 1, fp);
 	fread(&temp, sizeof(int), 1, fp);
@@ -399,8 +440,35 @@ void DBN::RBMLoad(char *fileName){
 		}
 	}
 
+	///////////////
+	for(int j = 0; j < classLayer.m_weight.rows; j++){
+		for(int k = 0; k < classLayer.m_weight.cols; k++){
+			float tf;
+			fread(&tf, sizeof(float), 1, fp);
+			classLayer.m_weight.at<float>(j,k) = tf;
+		}
+	}
+
+	//b
+	for(int j = 0; j < classLayer.m_b.rows; j++){
+		for(int k = 0; k < classLayer.m_b.cols; k++){
+			float tf;
+			fread(&tf, sizeof(float), 1, fp);
+			classLayer.m_b.at<float>(j,k) = tf;
+		}
+	}
+
+	//c
+	for(int j = 0; j < classLayer.m_c.rows; j++){
+		for(int k = 0; k < classLayer.m_c.cols; k++){
+			float tf;
+			fread(&tf, sizeof(float), 1, fp);
+			classLayer.m_c.at<float>(j,k) = tf;
+		}
+	}
+
 	fclose(fp);
-	printf("Writing complete!\n");
+	printf("Loading complete!\n");
 }
 
 void DBN::RBMLayersave(char *fileName, Layer src){
@@ -510,7 +578,7 @@ void DBN::BatchOpen(char *DataName, char* LabelName){
 }
 int DBN::BatchRandLoad(cv::Mat *batch, cv::Mat *Label){
 	static int count = 0;
-	
+
 	if(count < 1){
 		//Random box mixing
 		for(int i = 0; i < m_Dataloader.getDataCount(); i++){
@@ -545,4 +613,24 @@ int DBN::BatchRandLoad(cv::Mat *batch, cv::Mat *Label){
 void DBN::BatchClose(){
 	m_Dataloader.FileClose();
 	m_Labelloader.FileClose();
+}
+
+void DBN::FullBackpropagation(){
+	cv::Mat miniBatch, BatchLabel;
+
+	BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx3-ubyte");
+
+	m_NEpoch = 0;
+
+	//정해진 Epoch만큼 루프
+	while(1){
+		BatchRandLoad(&miniBatch, &BatchLabel);
+
+
+		if(m_NEpoch > NEPOCH){
+			break;
+		}
+
+	}
+	BatchClose();
 }
