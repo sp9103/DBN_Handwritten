@@ -1,5 +1,5 @@
 #include "common.h"
-#include "DBN.h"
+//#include "DBN.h"
 #include "Application.h"
 
 int main(){
@@ -9,9 +9,7 @@ int main(){
 	printf("DBN Handwritten Recognition\n\n");
 
 	//Training phase
-	/*dbn.Training();
-	dbn.save("Data\\DBN_Data.bin");*/
-	
+	//dbn.Training();
 
 	//Testing phase
 	/*dbn.Load("DBN_Data.bin");

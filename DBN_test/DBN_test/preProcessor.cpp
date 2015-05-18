@@ -13,6 +13,7 @@ preProcessor::~preProcessor(void)
 void preProcessor::ImageToDataMat(IplImage *src, cv::Mat *dst, int row){
 	int i;
 	for(i = 0; i < src->height * src->width; i++){
+		uchar val = ((uchar)src->imageData[i] > 123) ? 1.0f : 0.0f;
 		dst->at<float>(row, i) = ((uchar)src->imageData[i] > 123) ? 1.0f : 0.0f;
 	}
 }
@@ -39,4 +40,41 @@ void preProcessor::Mopology(IplImage *src, IplImage *dst, int iter){
 
 	cvDilate(src, dst, 0, iter);
 	cvErode(src, dst, 0, iter);
+}
+
+void preProcessor::ResizeNMakeMat(IplImage *src, cv::Mat *dst){
+	IplImage *reInput, *tsrc;
+	reInput = cvCreateImage(cvSize(28,28), IPL_DEPTH_8U, 1);
+
+	//resize
+	int tw, th;
+	tw = src->width;
+	th = src->height;
+
+	//추후 수정
+	int tsize;
+	tsize = (tw > th ? tw : th) + 2;
+
+	tsrc = cvCreateImage(cvSize(tsize, tsize), IPL_DEPTH_8U, 1);
+	cvZero(tsrc);
+
+	CvRect tROI;
+	tROI.width = src->width;
+	tROI.height = src->height;
+	tROI.x = (tsrc->width/2) - (src->width/2);
+	tROI.y = (tsrc->height/2) - (src->height/2);
+
+	cvSetImageROI(tsrc, tROI);
+	cvCopy(src, tsrc);
+	cvResetImageROI(tsrc);
+
+	cvResize(tsrc, reInput);
+	cvShowImage("testset", reInput);
+	cvWaitKey(0);
+
+	//IplImage to Mat
+	ImageToDataMat(reInput, dst, 0);
+
+	cvReleaseImage(&reInput);
+	cvReleaseImage(&tsrc);
 }

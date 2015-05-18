@@ -18,6 +18,9 @@ public:
 	void save(char *fileName);
 	void Load(char *fileName);
 
+	void Netsave(char *fileName);
+	void NetLoad(char *fileName);
+
 	void InitNetwork();
 
 	//28*28 이미지 쿼리를 날리면 classification 결과를 산출
@@ -62,9 +65,6 @@ private:
 	//Debug용 함수
 	void DataVis(cv::Mat data, cv::Mat data2);
 	void DataSingleVis(cv::Mat data, char *windowName);
-
-	void Netsave(char *fileName);
-	void NetLoad(char *fileName);
 
 	void RBMLayersave(char *fileName, Layer src);
 	void RBMLayerload(char *fileName, Layer *dst);
