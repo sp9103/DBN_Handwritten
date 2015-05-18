@@ -124,7 +124,43 @@ void DBN::Training(){
 }
 
 void DBN::Testing(){
-	m_Dataloader.FileOpen("t10k-images.idx3-ubyte");
+	cv::Mat miniBatch, BatchLabel;
+	int Ncorrect = 0, total = 0;
+
+	m_NEpoch = 0;
+
+	printf("DBN Testing phase\n");
+	printf("\nNetwork Initialzie from file....\n");
+	InitNetwork();
+	NetLoad("FullNetworkData.bin");
+	printf("Initialize complete!\n");
+
+	//Test data open
+	printf("\nTest data set open....\n");
+	BatchOpen("Data\\t10k-images.idx3-ubyte", "t10k-labels.idx1-ubyte");
+	printf("\nTest data set open complete!\n");
+
+	while(1){
+		BatchRandLoad(&miniBatch, &BatchLabel);
+
+		for(int i = 0; i < BATCHSIZE; i++){
+			int ans = DBNquery(miniBatch.row(i));
+			int gtrue = FindMaxIdx(BatchLabel.row(i));
+
+			printf("[%d] true : %d, ans : %d\n", total++);
+			if(ans == gtrue)	Ncorrect++;
+		}
+
+		if(m_NEpoch > 1){
+			printf("Test Complete!\n");
+			break;
+		}
+	}
+
+	float CorrectRatio = (float)Ncorrect/(float)total * 100.0f;
+	printf("Number of Test data : %d\n", total);
+	printf("Correct ratio  : %f%%\n", CorrectRatio);
+	printf("Error ratio  : %f%%\n", 100.0f - CorrectRatio);
 }
 
 float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
@@ -647,9 +683,17 @@ int DBN::DBNquery(cv::Mat src){
 	classLayer.processPresData(&tOutput, tInput);
 
 	//결과중 가장 큰 놈 산출
+	FindMaxIdx(tOutput);
+
+	return retVal;
+}
+
+int DBN::FindMaxIdx(cv::Mat src){
 	float tmax = -99999.0f;
-	for(int i = 0; i < tOutput.cols; i++){
-		float temp = tOutput.at<float>(0, i);
+	int retVal = -1;
+
+	for(int i = 0; i < src.cols; i++){
+		float temp = src.at<float>(0, i);
 		if(tmax < temp){
 			tmax = temp;
 			retVal = i;
