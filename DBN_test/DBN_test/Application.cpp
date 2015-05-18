@@ -21,9 +21,11 @@ void Application::Run(){
 	if(strlen(buf) < 2)
 		sprintf(buf, "sample1.jpg");
 
-	m_ori = cvLoadImage(buf, CV_LOAD_IMAGE_GRAYSCALE);
+	m_ori = cvLoadImage(buf);
+	m_gray = cvCreateImage(cvGetSize(m_ori), IPL_DEPTH_8U, 1);
+	cvCvtColor(m_ori, m_gray, CV_BGR2GRAY);
 	tboard = cvCloneImage(m_ori);
-	tprocess = cvCloneImage(m_ori);
+	tprocess = cvCloneImage(m_gray);
 
 	cvNamedWindow("Input Image");					//원본 이미지 로드
 	cvNamedWindow("Image processing");				//트랙바 붙이고 노이즈 필터링 된 이미지
@@ -33,12 +35,15 @@ void Application::Run(){
 	while(1){
 
 		if(TrackVal != prevTrackVal){
+			cvCopy(m_ori, tboard);
+
 			//전처리
-			m_preProcess.ThresholdBin(m_ori, tprocess, TrackVal);
+			m_preProcess.ThresholdBin(m_gray, tprocess, TrackVal);
 			m_preProcess.Mopology(tprocess, tprocess, 1);
 
 			m_bloblabeling.SetParam(tprocess, 100);
 			m_bloblabeling.DoLabeling();
+			m_bloblabeling.DrawBlob(tboard, cvScalar(0, 0, 255));
 
 			prevTrackVal = TrackVal;
 		}
@@ -55,5 +60,6 @@ void Application::Run(){
 	cvReleaseImage(&m_ori);
 	cvReleaseImage(&tprocess);
 	cvReleaseImage(&tboard);
+	cvReleaseImage(&m_gray);
 
 }

@@ -36,6 +36,13 @@ public:
 	// 레이블링(실행)
 	void		DoLabeling();
 
+public:
+	//레이블 정보 반환
+	void GetLabel(CvPoint pos, CvRect *info);
+
+	//레이블 그리기
+	void DrawBlob(IplImage *src, CvScalar color);
+
 private:
 	// 레이블링(동작)
 	int		 Labeling(IplImage* image, int nThreshold);

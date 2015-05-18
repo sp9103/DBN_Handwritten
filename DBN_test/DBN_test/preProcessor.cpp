@@ -28,7 +28,7 @@ void preProcessor::ThresholdBin(IplImage *input, IplImage *bin, int threshold){
 	for(int i = 0; i < input->height; i++){
 		for(int j = 0; j < input->width; j++){
 			uchar val = (uchar)input->imageData[i*input->widthStep + j];
-			bin->imageData[i*input->widthStep + j] = (uchar)(val > threshold ? 255 : 0);
+			bin->imageData[i*input->widthStep + j] = (uchar)(val > threshold ? 0 : 255);
 		}
 	}
 }

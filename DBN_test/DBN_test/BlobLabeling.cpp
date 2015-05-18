@@ -318,3 +318,30 @@ int CBlobLabeling::__Area(unsigned char *DataBuf, int StartX, int StartY, int En
 
 	return nArea;
 }
+
+void CBlobLabeling::DrawBlob(IplImage *src, CvScalar color){
+	for(int i = 0; i < m_nBlobs; i++){
+		CvPoint pt1 = cvPoint( m_recBlobs[i].x, m_recBlobs[i].y);
+		CvPoint pt2 = cvPoint( pt1.x + m_recBlobs[i].width, pt1.y + m_recBlobs[i].height );
+
+		cvDrawRect(src, pt1, pt2, color, 2);
+	}
+}
+
+//없을 때는 x,y = -1 반환
+void CBlobLabeling::GetLabel(CvPoint pos, CvRect *info){
+	info->x = info->y = -1;
+	info->width = info->height = -1;
+
+	for(int i = 0; i < m_nBlobs; i++){
+		CvPoint pt1 = cvPoint( m_recBlobs[i].x, m_recBlobs[i].y);
+		CvPoint pt2 = cvPoint( pt1.x + m_recBlobs[i].width, pt1.y + m_recBlobs[i].height );
+
+		if(pt1.x < pos.x && pt1.y < pos.y && pt2.x > pos.x && pt2.y > pos.y){
+			info->x = m_recBlobs[i].x;
+			info->y = m_recBlobs[i].y;
+			info->width = m_recBlobs[i].width;
+			info->height = m_recBlobs[i].height;
+		}
+	}
+}
