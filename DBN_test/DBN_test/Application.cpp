@@ -31,6 +31,7 @@ void Application::Run(){
 	cvNamedWindow("Image processing");				//트랙바 붙이고 노이즈 필터링 된 이미지
 
 	cv::createTrackbar("Thre", "Image processing", &TrackVal, 255);
+	cv::setMouseCallback("Input Image", mouseCallback, this);
 
 	while(1){
 
@@ -62,4 +63,20 @@ void Application::Run(){
 	cvReleaseImage(&tboard);
 	cvReleaseImage(&m_gray);
 
+}
+
+void Application::mouseCallback(int event, int x, int y, int flags, void *param){
+	Application *self = static_cast<Application*>(param);
+	self->DomouseCallback(event, x, y, flags);
+}
+
+void Application::DomouseCallback(int event, int x, int y, int flags){
+	CvRect BlobInfo;
+
+	switch(event){
+	case CV_EVENT_LBUTTONDOWN:
+		m_bloblabeling.GetLabel(cvPoint(x,y), &BlobInfo);
+		break;
+
+	}
 }
