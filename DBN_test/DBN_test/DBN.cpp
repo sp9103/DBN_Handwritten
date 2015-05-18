@@ -639,7 +639,7 @@ int DBN::DBNquery(cv::Mat src){
 
 	MatCopy(src, &tInput);
 
-	for(int i = 0; i < LAYERHEIGHT; i++){
+	for(int i = 0; i < LAYERHEIGHT-1; i++){
 		hidden[i].processPresData(&tOutput, tInput);
 		MatCopy(tOutput, &tInput);
 	}

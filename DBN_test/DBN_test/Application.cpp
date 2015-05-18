@@ -91,7 +91,7 @@ void Application::DomouseCallback(int event, int x, int y, int flags){
 
 				//28*28 scale로 맞추기
 				tPatch.create(1, 28*28, CV_32FC1);
-				m_preProcess.ResizeNMakeMat(temp, &tPatch);
+				//m_preProcess.ResizeNMakeMat(temp, &tPatch);
 
 				//DBN query
 				int result = m_DBN.DBNquery(tPatch);
