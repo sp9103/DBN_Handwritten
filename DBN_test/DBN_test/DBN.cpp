@@ -653,6 +653,7 @@ void DBN::FullBackpropagation(){
 	cv::Mat miniBatch, BatchLabel;
 	cv::Mat Ok[LAYERHEIGHT];
 	cv::Mat delta[LAYERHEIGHT];
+	cv::Mat wGrad, cGrad;
 
 	BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx1-ubyte");
 
@@ -663,13 +664,7 @@ void DBN::FullBackpropagation(){
 		BatchRandLoad(&miniBatch, &BatchLabel);
 
 		//Forward process
-		cv::Mat tInput;
-		MatCopy(miniBatch, &tInput);
-		for(int i = 0; i < LAYERHEIGHT-1; i++){
-			hidden[i].processPresData(&Ok[i], tInput);
-			MatCopy(Ok[i], &tInput);
-		}
-		classLayer.processPresData(&Ok[LAYERHEIGHT-1], tInput);
+		BPForward(miniBatch, Ok);
 
 		//Backward process
 		for(int i = LAYERHEIGHT-1; i > 0; i--){
@@ -677,11 +672,33 @@ void DBN::FullBackpropagation(){
 			if(i == LAYERHEIGHT-1){
 				delta[i].create(BATCHSIZE, classLayer.getUnitNum(), CV_32FC1);
 
+				//delta calculation
+				for(int j = 0; j < delta[i].rows; j++){
+					for(int k = 0; k < delta[i].cols; k++){
+						delta[i].at<float>(j,k) = Ok[i].at<float>(j,k) * (1 - Ok[i].at<float>(j,k)) * (BatchLabel.at<float>(0,k) - Ok[i].at<float>(j,k));
+					}
+				}
 			}
 			//hidden layer
 			else{
+				cv::Mat wd;
+
 				delta[i].create(BATCHSIZE, hidden[i].getUnitNum(), CV_32FC1);
+
+				//sumation weight * delta
+
+				//delta calculation - hidden
+				for(int j = 0; j < delta[i].rows; j++){
+					for(int k = 0; k < delta[i].cols; k++){
+						delta[i].at<float>(j,k) = Ok[i].at<float>(j,k) * (1 - Ok[i].at<float>(j,k)) * wd.at<float>(j,k);
+					}
+				}
 			}
+
+			//gradient calculate
+
+			//gradient apply
+			BPgradApply(wGrad, cGrad, i);
 		}
 
 		if(m_NEpoch > NEPOCH){
@@ -690,6 +707,29 @@ void DBN::FullBackpropagation(){
 
 	}
 	BatchClose();
+}
+
+void DBN::BPForward(cv::Mat batch, cv::Mat *Ok){
+	cv::Mat tInput;
+	MatCopy(batch, &tInput);
+	for(int i = 0; i < LAYERHEIGHT-1; i++){
+		hidden[i].processPresData(&Ok[i], tInput);
+		MatCopy(Ok[i], &tInput);
+	}
+	classLayer.processPresData(&Ok[LAYERHEIGHT-1], tInput);
+}
+
+void DBN::BPgradApply(cv::Mat wGrad, cv::Mat cGrad, int idx){
+	//classification layer
+	if(idx == LAYERHEIGHT - 1){
+		classLayer.m_weight = classLayer.m_weight + wGrad;
+		classLayer.m_weight = classLayer.m_c + cGrad;
+	}
+	//hidden layer
+	else{
+		hidden[idx].m_weight = hidden[idx].m_weight + wGrad;
+		hidden[idx].m_c = hidden[idx].m_c + cGrad;
+	}
 }
 
 int DBN::DBNquery(cv::Mat src){
