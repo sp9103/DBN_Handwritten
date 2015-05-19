@@ -629,7 +629,7 @@ int DBN::BatchRandLoad(cv::Mat *batch, cv::Mat *Label){
 		}
 	}
 	if(Label != NULL){
-		Label->create(BATCHSIZE, 28*28, CV_32FC1);
+		Label->create(BATCHSIZE, 10, CV_32FC1);
 		for(int i = 0; i < BATCHSIZE; i++){
 			m_LabelSet.row(m_box[count + i]).copyTo(Label->row(i));
 		}
@@ -652,8 +652,9 @@ void DBN::BatchClose(){
 void DBN::FullBackpropagation(){
 	cv::Mat miniBatch, BatchLabel;
 	cv::Mat Ok[LAYERHEIGHT];
+	cv::Mat delta[LAYERHEIGHT];
 
-	BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx3-ubyte");
+	BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx1-ubyte");
 
 	m_NEpoch = 0;
 
@@ -668,13 +669,19 @@ void DBN::FullBackpropagation(){
 			hidden[i].processPresData(&Ok[i], tInput);
 			MatCopy(Ok[i], &tInput);
 		}
-		classLayer.processPresData(&Ok[LAYERHEIGHT], tInput);
+		classLayer.processPresData(&Ok[LAYERHEIGHT-1], tInput);
 
 		//Backward process
+		for(int i = LAYERHEIGHT-1; i > 0; i--){
+			//output layer
+			if(i == LAYERHEIGHT-1){
+				delta[i].create(BATCHSIZE, classLayer.getUnitNum(), CV_32FC1);
 
-
-		for(int i = LAYERHEIGHT-2; i > 0; i--){
-			
+			}
+			//hidden layer
+			else{
+				delta[i].create(BATCHSIZE, hidden[i].getUnitNum(), CV_32FC1);
+			}
 		}
 
 		if(m_NEpoch > NEPOCH){

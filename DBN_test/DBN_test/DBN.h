@@ -3,8 +3,8 @@
 #include "LabelLoader.h"
 #include "Layer.h"
 
-#define DEBUG_VISIBLE
-#define RBM_TRAINING
+//#define DEBUG_VISIBLE
+//#define RBM_TRAINING
 
 class DBN
 {

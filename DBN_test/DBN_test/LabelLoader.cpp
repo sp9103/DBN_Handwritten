@@ -40,7 +40,7 @@ void LabelLoader::LabelDataLoad(int batchSize, cv::Mat *dataMat){
 	{
 		unsigned char temp=0;
 
-		dataMat->create(batchSize, 9, CV_32FC1);
+		dataMat->create(batchSize, 10, CV_32FC1);
 
 		//Label Read
 		for(int i = 0; i < batchSize; i++){
