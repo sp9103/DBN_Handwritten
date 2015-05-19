@@ -73,6 +73,7 @@ private:
 	void FullBackpropagation();
 	void BPgradApply(cv::Mat wGrad, cv::Mat cGrad, int idx);
 	void BPForward(cv::Mat batch, cv::Mat *Ok);
+	void BPgradCalc(cv::Mat delta, cv::Mat x, cv::Mat *wGrad, cv::Mat *cGrad);
 
 	void ForwardProcess(cv::Mat src, cv::Mat *dst);
 	int FindMaxIdx(cv::Mat src);

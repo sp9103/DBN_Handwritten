@@ -681,7 +681,6 @@ void DBN::FullBackpropagation(){
 			}
 			//hidden layer
 			else{
-				cv::Mat wd;
 
 				delta[i].create(BATCHSIZE, hidden[i].getUnitNum(), CV_32FC1);
 
@@ -690,12 +689,22 @@ void DBN::FullBackpropagation(){
 				//delta calculation - hidden
 				for(int j = 0; j < delta[i].rows; j++){
 					for(int k = 0; k < delta[i].cols; k++){
-						delta[i].at<float>(j,k) = Ok[i].at<float>(j,k) * (1 - Ok[i].at<float>(j,k)) * wd.at<float>(j,k);
+						float wd = 0.0f;
+
+						for(int l = 0; l < delta[i+1].cols; l++){
+							wd += delta[i-1].at<float>(j,l);
+						}
+						
+						delta[i].at<float>(j,k) = Ok[i].at<float>(j,k) * (1 - Ok[i].at<float>(j,k)) * wd;
 					}
 				}
 			}
 
-			//gradient calculate
+			//gradient calculate - TO-DO
+			if(i > 0)
+				BPgradCalc(delta[i], Ok[i-1],&wGrad, &cGrad);
+			else
+				BPgradCalc(delta[i], miniBatch, &wGrad, &cGrad);
 
 			//gradient apply
 			BPgradApply(wGrad, cGrad, i);
@@ -707,6 +716,46 @@ void DBN::FullBackpropagation(){
 
 	}
 	BatchClose();
+}
+
+void DBN::BPgradCalc(cv::Mat delta, cv::Mat x, cv::Mat *wGrad, cv::Mat *cGrad){
+	cv::Mat tx, twGrad;
+	tx.create(x.rows, x.cols + 1, CV_32FC1);
+
+	for(int i = 0; i < tx.rows; i++){
+		for(int j = 0; j < tx.cols; j++){
+			if(j == tx.cols - 1)
+				tx.at<float>(i,j) = 1.0f;
+			else
+				tx.at<float>(i,j) = x.at<float>(i,j);
+		}
+	}
+
+	//calculate
+	float tsum;
+	twGrad.create( x.cols+1, delta.cols, CV_32FC1 );
+	for(int i = 0; i < twGrad.rows; i++){
+		for(int j = 0; j < twGrad.cols; j++){
+
+			tsum = 0.0f;
+			for(int k = 0; k < BATCHSIZE; k++){
+				tsum += delta.at<float>(k,j) * tx.at<float>(k,i);
+			}
+			twGrad.at<float>(i,j) = EPSILON * tsum / BATCHSIZE;
+
+		}
+	}
+
+	//ºÐÇØ
+	wGrad->create(twGrad.rows - 1, twGrad.cols, CV_32FC1);
+	for(int i = 0; i < twGrad.rows - 1; i++){
+		for(int j = 0; j < twGrad.cols; j++){
+			wGrad->at<float>(i,j) = twGrad.at<float>(i,j);
+		}
+	}
+	MatCopy(twGrad.row(twGrad.rows-1), cGrad );
+
+
 }
 
 void DBN::BPForward(cv::Mat batch, cv::Mat *Ok){
