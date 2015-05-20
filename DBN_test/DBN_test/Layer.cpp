@@ -264,7 +264,7 @@ void Layer::WeightVis(){
 	}
 	
 	cv::imshow("Weight vis", tboard);
-	cv::waitKey(0);
+	cv::waitKey(30);
 }
 
 void Layer::processPresData(cv::Mat *dst, cv::Mat data){

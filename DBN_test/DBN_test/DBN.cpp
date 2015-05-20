@@ -656,6 +656,7 @@ void DBN::FullBackpropagation(){
 	cv::Mat wGrad, cGrad;
 
 	BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx1-ubyte");
+	printf("Batch Load complete!\n");
 
 	m_NEpoch = 0;
 
@@ -675,34 +676,40 @@ void DBN::FullBackpropagation(){
 				//delta calculation
 				for(int j = 0; j < delta[i].rows; j++){
 					for(int k = 0; k < delta[i].cols; k++){
-						delta[i].at<float>(j,k) = Ok[i].at<float>(j,k) * (1 - Ok[i].at<float>(j,k)) * (BatchLabel.at<float>(0,k) - Ok[i].at<float>(j,k));
+						delta[i].at<float>(j,k) = Ok[i].at<float>(j,k) * (1 - Ok[i].at<float>(j,k)) * (BatchLabel.at<float>(j,k) - Ok[i].at<float>(j,k));
 					}
 				}
 			}
 			//hidden layer
-			else{
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			///////////////////////////////////////////////////////내일 디버깅해야하는 시점/////////////////////////////////////////////////////////////////////////////
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-				delta[i].create(BATCHSIZE, hidden[i].getUnitNum(), CV_32FC1);
+			//else{
 
-				//sumation weight * delta
+			//	delta[i].create(BATCHSIZE, hidden[i].getUnitNum(), CV_32FC1);
 
-				//delta calculation - hidden
-				for(int j = 0; j < delta[i].rows; j++){
-					for(int k = 0; k < delta[i].cols; k++){
-						float wd = 0.0f;
+			//	//delta calculation - hidden
+			//	for(int j = 0; j < delta[i].rows; j++){
+			//		for(int k = 0; k < delta[i].cols; k++){
+			//			float wd;
+			//			if(i+1 == LAYERHEIGHT-1)
+			//				wd = BPMulWDelta( delta[i+1], classLayer.m_weight, classLayer.m_c, j, k);
+			//			else
+			//				wd = BPMulWDelta( delta[i+1], hidden[i].m_weight, classLayer.m_c, j, k);
 
-						for(int l = 0; l < delta[i+1].cols; l++){
-							wd += delta[i-1].at<float>(j,l);
-						}
-						
-						delta[i].at<float>(j,k) = Ok[i].at<float>(j,k) * (1 - Ok[i].at<float>(j,k)) * wd;
-					}
-				}
-			}
+			//			delta[i].at<float>(j,k) = Ok[i].at<float>(j,k) * (1 - Ok[i].at<float>(j,k)) * wd;
+			//		}
+			//	}
+			//}
+
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 			//gradient calculate - TO-DO
 			if(i > 0)
-				BPgradCalc(delta[i], Ok[i-1],&wGrad, &cGrad);
+				BPgradCalc(delta[i], Ok[i-1], &wGrad, &cGrad);
 			else
 				BPgradCalc(delta[i], miniBatch, &wGrad, &cGrad);
 
@@ -716,6 +723,29 @@ void DBN::FullBackpropagation(){
 
 	}
 	BatchClose();
+}
+
+float DBN::BPMulWDelta(cv::Mat Deltak, cv::Mat Wkh, cv::Mat bias, int row, int Didx){
+	float retVal = 0.0f;
+	cv::Mat tW;
+	tW.create(Wkh.rows + 1, Wkh.cols, CV_32FC1);
+
+	for(int i = 0; i < tW.rows; i++){
+		for(int j = 0; j < tW.cols; j++){
+			if(i == tW.rows - 1)
+				tW.at<float>(i,j) = bias.at<float>(0, j);
+			else
+				tW.at<float>(i,j) = Wkh.at<float>(i,j);
+		}
+	}
+
+
+
+	for(int i = 0; i < Deltak.cols; i++){
+		retVal += Deltak.at<float>(row, i) * tW.at<float>(Didx, i);
+	}
+
+	return retVal;
 }
 
 void DBN::BPgradCalc(cv::Mat delta, cv::Mat x, cv::Mat *wGrad, cv::Mat *cGrad){
@@ -772,7 +802,7 @@ void DBN::BPgradApply(cv::Mat wGrad, cv::Mat cGrad, int idx){
 	//classification layer
 	if(idx == LAYERHEIGHT - 1){
 		classLayer.m_weight = classLayer.m_weight + wGrad;
-		classLayer.m_weight = classLayer.m_c + cGrad;
+		classLayer.m_c = classLayer.m_c + cGrad;
 	}
 	//hidden layer
 	else{

@@ -3,7 +3,6 @@
 
 Application::Application(void)
 {
-	m_DBN.InitNetwork();
 	//m_DBN.NetLoad("FullNetworkData.bin");
 }
 
@@ -16,6 +15,7 @@ void Application::Run(){
 	char buf[256];
 	int prevTrackVal = -1, TrackVal = 190;
 
+	m_DBN.InitNetwork();
 	printf("Insert File Name : ");
 	scanf("%s", buf);
 	if(strlen(buf) < 2)
