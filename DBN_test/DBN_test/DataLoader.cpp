@@ -51,7 +51,7 @@ void DataLoader::ImageDataLoad(int batchSize, cv::Mat *dataMat){
 				for(int c = 0;c<n_cols;++c)
 				{                 
 					m_file.read((char*)&temp,sizeof(temp));
-					temp = ((temp > 123) ? 255 : 0);							//binary image로 변환
+					//temp = ((temp > 123) ? 255 : 0);							//binary image로 변환
 					arr[r][c]= temp;
 				}           
 			}

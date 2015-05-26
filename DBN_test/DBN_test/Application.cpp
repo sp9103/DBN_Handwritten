@@ -16,6 +16,7 @@ void Application::Run(){
 	int prevTrackVal = -1, TrackVal = 190;
 
 	m_DBN.InitNetwork();
+	m_DBN.NetLoad("FullNetworkData.bin");
 	printf("Insert File Name : ");
 	scanf("%s", buf);
 	if(strlen(buf) < 2)
@@ -91,12 +92,13 @@ void Application::DomouseCallback(int event, int x, int y, int flags){
 
 				//28*28 scale로 맞추기
 				tPatch.create(1, 28*28, CV_32FC1);
-				//m_preProcess.ResizeNMakeMat(temp, &tPatch);
+				m_preProcess.ResizeNMakeMat(temp, &tPatch);
 
 				//DBN query
 				int result = m_DBN.DBNquery(tPatch);
 
 				//Draw result
+				printf("result : %d\n", result);
 
 				cvReleaseImage(&temp);
 			}

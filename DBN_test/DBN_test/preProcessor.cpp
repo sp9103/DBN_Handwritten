@@ -13,8 +13,8 @@ preProcessor::~preProcessor(void)
 void preProcessor::ImageToDataMat(IplImage *src, cv::Mat *dst, int row){
 	int i;
 	for(i = 0; i < src->height * src->width; i++){
-		uchar val = ((uchar)src->imageData[i] > 123) ? 1.0f : 0.0f;
-		dst->at<float>(row, i) = ((uchar)src->imageData[i] > 123) ? 1.0f : 0.0f;
+		/*dst->at<float>(row, i) = ((uchar)src->imageData[i] > 123) ? 1.0f : 0.0f;*/
+		dst->at<float>(row, i) = (float)(uchar)src->imageData[i] / 255.0f;
 	}
 }
 
@@ -70,7 +70,7 @@ void preProcessor::ResizeNMakeMat(IplImage *src, cv::Mat *dst){
 
 	cvResize(tsrc, reInput);
 	cvShowImage("testset", reInput);
-	cvWaitKey(0);
+	cvWaitKey(10);
 
 	//IplImage to Mat
 	ImageToDataMat(reInput, dst, 0);

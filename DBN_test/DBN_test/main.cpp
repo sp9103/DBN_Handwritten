@@ -12,8 +12,7 @@ int main(){
 	dbn.Training();
 
 	//Testing phase
-	/*dbn.Load("DBN_Data.bin");
-	dbn.Testing();*/
+	//dbn.Testing();
 
 	//application
 	//app.Run();

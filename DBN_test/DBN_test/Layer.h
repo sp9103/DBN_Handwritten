@@ -13,7 +13,7 @@ public:
 	int getUnitNum();
 	void setLayerRelation(Layer *prev, Layer *post);
 
-	/*RBM 학습을 위한*/
+	/*RBM 학습을 위*/
 
 	/*현재 레이어 아웃풋을 계산 - hidden layer의 값*/
 	void processData(cv::Mat *dst, cv::Mat data);

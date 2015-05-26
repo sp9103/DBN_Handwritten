@@ -5,6 +5,7 @@
 
 //#define DEBUG_VISIBLE
 //#define RBM_TRAINING
+#define BP_TRAINING
 
 class DBN
 {
@@ -34,7 +35,7 @@ private:
 	Layer hidden[LAYERHEIGHT-1];
 	Layer classLayer;																//마지막 Classification을 위한 레이어
 
-	float RBMupdata(cv::Mat x1, float e, Layer *layer, int step);
+	float RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step);
 
 	void BatchLoad(cv::Mat *batch, cv::Mat *Label, char* DataName, char* LabelName);
 
@@ -74,7 +75,7 @@ private:
 	void BPgradApply(cv::Mat wGrad, cv::Mat cGrad, int idx);
 	void BPForward(cv::Mat batch, cv::Mat *Ok);
 	void BPgradCalc(cv::Mat delta, cv::Mat x, cv::Mat *wGrad, cv::Mat *cGrad);
-	float BPMulWDelta(cv::Mat Deltak, cv::Mat Wkh, cv::Mat bias, int row, int Didx);
+	float BPMulWDelta(cv::Mat Deltak, cv::Mat Wkh, int row, int Didx);
 
 	void ForwardProcess(cv::Mat src, cv::Mat *dst);
 	int FindMaxIdx(cv::Mat src);

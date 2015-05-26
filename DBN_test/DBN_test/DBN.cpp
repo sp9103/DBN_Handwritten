@@ -24,6 +24,10 @@ void DBN::InitNetwork(){
 	hidden[1].setLayerRelation(&hidden[0], &hidden[2]);
 	hidden[2].setLayerRelation(&hidden[1], &classLayer);
 	classLayer.setLayerRelation(&hidden[2], NULL);
+
+	/*visible.setLayerRelation(NULL, &hidden[0]);
+	hidden[0].setLayerRelation(&visible, &classLayer);
+	classLayer.setLayerRelation(&hidden[0], NULL);*/
 }
 
 void DBN::save(char *fileName){
@@ -115,12 +119,14 @@ void DBN::Training(){
 #endif
 
 	//supervised training - full optimization MLP backpropagation
+#ifdef BP_TRAINING
 	printf("\nSupervised Training phase start\n");
 	_super = clock();
 	FullBackpropagation();
 	Netsave("FullNetworkData.bin");
 
 	printf("Supervised Training phase complete (%dms)\n", clock() - _super);
+#endif
 }
 
 void DBN::Testing(){
@@ -135,9 +141,12 @@ void DBN::Testing(){
 	NetLoad("FullNetworkData.bin");
 	printf("Initialize complete!\n");
 
+	hidden[0].WeightVis();
+
 	//Test data open
 	printf("\nTest data set open....\n");
-	BatchOpen("Data\\t10k-images.idx3-ubyte", "t10k-labels.idx1-ubyte");
+	BatchOpen("Data\\t10k-images.idx3-ubyte", "Data\\t10k-labels.idx1-ubyte");
+	//BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx1-ubyte");
 	printf("\nTest data set open complete!\n");
 
 	while(1){
@@ -147,20 +156,31 @@ void DBN::Testing(){
 			int ans = DBNquery(miniBatch.row(i));
 			int gtrue = FindMaxIdx(BatchLabel.row(i));
 
-			printf("[%d] true : %d, ans : %d\n", total++);
+			total++;
 			if(ans == gtrue)	Ncorrect++;
+
+			float CorrectRatio = (float)Ncorrect/(float)total * 100.0f;
+			printf("[%d] true : %d, ans : %d  (%f%%)\n", total, gtrue, ans, CorrectRatio);
+
+			if(ans != gtrue){
+				DataSingleVis(miniBatch.row(i), "Error");
+				printf("false!\n");
+				cv::waitKey(0);
+			}
 		}
 
-		if(m_NEpoch > 1){
+		if(m_NEpoch > 0){
 			printf("Test Complete!\n");
 			break;
 		}
 	}
 
 	float CorrectRatio = (float)Ncorrect/(float)total * 100.0f;
+	printf("\n===================================================\n");
 	printf("Number of Test data : %d\n", total);
 	printf("Correct ratio  : %f%%\n", CorrectRatio);
 	printf("Error ratio  : %f%%\n", 100.0f - CorrectRatio);
+	printf("\n===================================================\n");
 }
 
 float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
@@ -183,16 +203,15 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	_start = clock();
 	layer->processTempData(&h1, x1);
 	MatCopy(h1, &hk);
-	for(int k = 1; k < step; k++){
-		layer->processTempBack(&xk, h1, &xkF);
-	}
+	layer->processTempBack(&xk, hk, &xkF);
+
 	printf("RBM CD (%dms)\n", clock() - _start);
 	_start = clock();
 
 #ifdef DEBUG_VISIBLE
 	//맨 하위 일때만
 	if(layer->m_prevLayer->m_prevLayer == NULL){
-		DataSingleVis(xkF, "Reconstruct");
+		DataSingleVis(xk, "Reconstruct");
 		cv::waitKey(1);
 	}else if(layer->m_prevLayer->m_prevLayer->m_prevLayer == NULL){								//두번째
 		//if(VisFrequency == 0){
@@ -221,7 +240,7 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 	//cv::reduce(h1, AVh1, 0, CV_REDUCE_AVG);
 
 	//gradient 계산
-	cv::Mat tprob = layer->calcProbH(x1);
+	cv::Mat tprob = layer->calcProbH(xk);
 	wGrad = calcW(h1, x1, tprob, xk);
 	bGrad = calcB(x1, xk);
 	cGrad = calcC(h1, tprob);
@@ -298,7 +317,7 @@ cv::Mat DBN::calcC(cv::Mat h1, cv::Mat prob){
 
 	for(int i = 0; i < h1.rows; i++){
 		for(int j = 0; j < h1.cols; j++){
-			result.at<float>(0,j) += EPSILON * (h1.at<float>(i,j) - prob.at<float>(0,j)) / (float)h1.rows;
+			result.at<float>(0,j) += EPSILON * (h1.at<float>(i,j) - prob.at<float>(i,j)) / (float)h1.rows;
 		}
 	}
 
@@ -342,12 +361,12 @@ float DBN::MatMaxEle(cv::Mat src){
 		for(int j = 0; j < src.cols; j++){
 			float tele = abs(src.at<float>(i,j));
 
-			if(tele > tmax)
-				tmax = tele;
+			//if(tele > tmax)
+				tmax += tele;
 		}
 	}
 
-	return tmax;
+	return tmax / (src.rows * src.cols);
 }
 
 void DBN::MatCopy(cv::Mat src, cv::Mat *dst){
@@ -586,10 +605,13 @@ void DBN::RBMLayerload(char *fileName, Layer *dst){
 
 void DBN::DataSingleVis(cv::Mat data, char *windowName){
 	cv::Mat fic;
-	fic.create(28, 28, CV_8UC1);
+	fic.create(28, 28, CV_32FC1);
 
 	for(int i = 0; i < data.cols; i++){
-		fic.at<uchar>(i/28,i%28) = (data.at<float>(0,i) > 0.0f) ? 255 : 0;
+		/*fic.at<uchar>(i/28,i%28) = (data.at<float>(0,i) > 0.0f) ? 255 : 0;*/
+		float tData = data.at<float>(0,i);
+
+		fic.at<float>(i/28,i%28) = tData;
 	}
 
 	cv::imshow(windowName, fic);
@@ -654,6 +676,7 @@ void DBN::FullBackpropagation(){
 	cv::Mat Ok[LAYERHEIGHT];
 	cv::Mat delta[LAYERHEIGHT];
 	cv::Mat wGrad, cGrad;
+	int _start, batchCount = 0;
 
 	BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx1-ubyte");
 	printf("Batch Load complete!\n");
@@ -665,7 +688,10 @@ void DBN::FullBackpropagation(){
 		BatchRandLoad(&miniBatch, &BatchLabel);
 
 		//Forward process
+		_start = clock();
 		BPForward(miniBatch, Ok);
+		printf("BP Forward process (%dms)\n", clock() - _start);
+		_start = clock();
 
 		//Backward process
 		for(int i = LAYERHEIGHT-1; i > 0; i--){
@@ -680,32 +706,24 @@ void DBN::FullBackpropagation(){
 					}
 				}
 			}
-			//hidden layer
-			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			///////////////////////////////////////////////////////내일 디버깅해야하는 시점/////////////////////////////////////////////////////////////////////////////
-			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-			//else{
+			else{
 
-			//	delta[i].create(BATCHSIZE, hidden[i].getUnitNum(), CV_32FC1);
+				delta[i].create(BATCHSIZE, hidden[i].getUnitNum(), CV_32FC1);
 
-			//	//delta calculation - hidden
-			//	for(int j = 0; j < delta[i].rows; j++){
-			//		for(int k = 0; k < delta[i].cols; k++){
-			//			float wd;
-			//			if(i+1 == LAYERHEIGHT-1)
-			//				wd = BPMulWDelta( delta[i+1], classLayer.m_weight, classLayer.m_c, j, k);
-			//			else
-			//				wd = BPMulWDelta( delta[i+1], hidden[i].m_weight, classLayer.m_c, j, k);
+				//delta calculation - hidden
+				for(int j = 0; j < delta[i].rows; j++){
+					for(int k = 0; k < delta[i].cols; k++){
+						float wd;
+						if(i+1 == LAYERHEIGHT-1)
+							wd = BPMulWDelta( delta[i+1], classLayer.m_weight, j, k);
+						else
+							wd = BPMulWDelta( delta[i+1], hidden[i].m_weight, j, k);
 
-			//			delta[i].at<float>(j,k) = Ok[i].at<float>(j,k) * (1 - Ok[i].at<float>(j,k)) * wd;
-			//		}
-			//	}
-			//}
-
-			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+						delta[i].at<float>(j,k) = Ok[i].at<float>(j,k) * (1 - Ok[i].at<float>(j,k)) * wd;
+					}
+				}
+			}
 
 			//gradient calculate - TO-DO
 			if(i > 0)
@@ -713,9 +731,20 @@ void DBN::FullBackpropagation(){
 			else
 				BPgradCalc(delta[i], miniBatch, &wGrad, &cGrad);
 
+			//Average Gradient
+			cv::Mat Avg, cAvg;
+			cv::reduce(wGrad, Avg, 0, CV_REDUCE_AVG);
+			cv::reduce(Avg, Avg, 1, CV_REDUCE_AVG);
+			cv::reduce(cGrad, cAvg, 0, CV_REDUCE_AVG);
+			cv::reduce(cAvg, cAvg, 1, CV_REDUCE_AVG);
+			printf("gradient : %f, bias : %f\n", Avg.at<float>(0,0), cAvg.at<float>(0,0));
+
 			//gradient apply
 			BPgradApply(wGrad, cGrad, i);
 		}
+
+		printf("[%d] BP Loop process (%dms)\n\n", ++batchCount, clock() - _start);
+		_start = clock();
 
 		if(m_NEpoch > NEPOCH){
 			break;
@@ -725,24 +754,11 @@ void DBN::FullBackpropagation(){
 	BatchClose();
 }
 
-float DBN::BPMulWDelta(cv::Mat Deltak, cv::Mat Wkh, cv::Mat bias, int row, int Didx){
+float DBN::BPMulWDelta(cv::Mat Deltak, cv::Mat Wkh, int row, int Didx){
 	float retVal = 0.0f;
-	cv::Mat tW;
-	tW.create(Wkh.rows + 1, Wkh.cols, CV_32FC1);
-
-	for(int i = 0; i < tW.rows; i++){
-		for(int j = 0; j < tW.cols; j++){
-			if(i == tW.rows - 1)
-				tW.at<float>(i,j) = bias.at<float>(0, j);
-			else
-				tW.at<float>(i,j) = Wkh.at<float>(i,j);
-		}
-	}
-
-
 
 	for(int i = 0; i < Deltak.cols; i++){
-		retVal += Deltak.at<float>(row, i) * tW.at<float>(Didx, i);
+		retVal += Deltak.at<float>(row, i) * Wkh.at<float>(Didx, i);
 	}
 
 	return retVal;
@@ -818,7 +834,10 @@ int DBN::DBNquery(cv::Mat src){
 	ForwardProcess(src, &tOutput);
 
 	//결과중 가장 큰 놈 산출
-	FindMaxIdx(tOutput);
+	for(int i = 0; i < tOutput.cols; i++)
+		printf("%f\t", tOutput.at<float>(0,i));
+	printf("\n");
+	retVal = FindMaxIdx(tOutput);
 
 	return retVal;
 }
@@ -849,4 +868,6 @@ void DBN::ForwardProcess(cv::Mat src, cv::Mat *dst){
 	}
 
 	classLayer.processPresData(&tOutput, tInput);
+
+	MatCopy(tOutput, dst);
 }

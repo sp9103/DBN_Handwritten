@@ -86,7 +86,7 @@ void Layer::processData(cv::Mat *dst, cv::Mat data){
 		if(visible == this)
 			break;
 
-		visible->m_postLayer->processTempData(dst, input);
+		visible->m_postLayer->processPresData(dst, input);
 		visible = visible->m_postLayer;
 
 		input = dst->clone();
@@ -119,12 +119,6 @@ void Layer::processTempData(cv::Mat *dst, cv::Mat input){
 	}
 
 	*dst = tInput * tW;
-
-	///////////////AVG
-	//cv::Mat AvgInput;
-
-	//cv::reduce(tInput, AvgInput, 0, CV_REDUCE_AVG);
-	//*dst = AvgInput * tW;
 
 	for(int i = 0; i < dst->rows; i++){
 		for(j = 0; j < dst->cols; j++)
@@ -171,7 +165,7 @@ void Layer::processTempBack(cv::Mat *dst, cv::Mat input, cv::Mat *firstRow){
 
 	for(int i = 0; i < dst->rows; i++){
 		for(j = 0; j < dst->cols; j++)
-			dst->at<float>(i,j) = sampling(sigmoid(dst->at<float>(i,j)));
+			dst->at<float>(i,j) = sigmoid(dst->at<float>(i,j));
 	}
 
 	//for(int i = 0; i < firstRow->cols; i++)
@@ -264,7 +258,7 @@ void Layer::WeightVis(){
 	}
 	
 	cv::imshow("Weight vis", tboard);
-	cv::waitKey(30);
+	cv::waitKey(0);
 }
 
 void Layer::processPresData(cv::Mat *dst, cv::Mat data){
