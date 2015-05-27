@@ -292,3 +292,6 @@ void Layer::processPresData(cv::Mat *dst, cv::Mat data){
 			dst->at<float>(i,j) = sigmoid(dst->at<float>(i,j));
 	}
 }
+
+void Layer::processTempSoft(cv::Mat *dst, cv::Mat input){
+}

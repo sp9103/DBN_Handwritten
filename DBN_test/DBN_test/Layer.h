@@ -22,6 +22,8 @@ public:
 	void processTempData(cv::Mat *dst, cv::Mat input);
 	/*hidden Layer의 값을 넣고 back process 수행*/
 	void processTempBack(cv::Mat *dst, cv::Mat input, cv::Mat *firstRow);
+	/*SoftMax function통과 시킨 결과 (not sigmoid)*/
+	void processTempSoft(cv::Mat *dst, cv::Mat input);
 
 	void ApplyGrad(cv::Mat wGrad, cv::Mat bGrad, cv::Mat cGrad);
 

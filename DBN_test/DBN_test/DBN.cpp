@@ -892,8 +892,31 @@ void DBN::PrintMat(cv::Mat src){
 }
 
 void DBN::LogisticTraining(){
+	cv::Mat dataMat, labelMat, hData;
+	int _start;
 
+	_start = clock();
 	printf("Batch Loading....\n");
 	BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx1-ubyte");
-	printf("Batch Load complete!\n");
+	printf("Batch Load complete! (%dms) \n", clock() - _start);
+
+	m_NEpoch = 0;
+
+	BatchRandLoad(&dataMat, &labelMat, m_Dataloader.getDataCount());
+
+	//이전 히든 레이어 전부 
+	_start = clock();
+	printf("Hidden Layer calculate start!\n");
+	for(int i = 0; i < LAYERHEIGHT-1; i++){
+		hidden[i].processPresData(&dataMat, dataMat);
+		printf("[%d] hidden layer process complete!\n", i);
+	}
+	printf("Hidden Layer process complete! (%dms)\n", clock() - _start);
+
+	while(1){
+
+		if(m_NEpoch > NEPOCH){
+			break;
+		}
+	}
 }
