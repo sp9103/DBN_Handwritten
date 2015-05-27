@@ -9,7 +9,7 @@ using namespace std;
 
 #define BATCHSIZE 100
 #define GRADTHRESHOLD 0.12
-#define EPSILON		0.005
+#define EPSILON		0.01
 #define CDStep		2
 #define NEPOCH		59
 

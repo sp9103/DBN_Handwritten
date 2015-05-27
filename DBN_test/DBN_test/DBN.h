@@ -4,8 +4,9 @@
 #include "Layer.h"
 
 //#define DEBUG_VISIBLE
-//#define RBM_TRAINING
+#define RBM_TRAINING
 #define BP_TRAINING
+//#define SOFTMAX
 
 class DBN
 {
@@ -41,7 +42,7 @@ private:
 
 	//·£´ý
 	void BatchOpen(char *DataName, char* LabelName);
-	int BatchRandLoad(cv::Mat *batch, cv::Mat *Label);
+	int BatchRandLoad(cv::Mat *batch, cv::Mat *Label, int nBatch);
 	void BatchClose();
 	int *m_box;
 	cv::Mat m_DataSet, m_LabelSet;
@@ -79,5 +80,11 @@ private:
 
 	void ForwardProcess(cv::Mat src, cv::Mat *dst);
 	int FindMaxIdx(cv::Mat src);
+
+	//Logistic Regression
+	void LogisticTraining();
+
+	//Debug¿ë
+	void PrintMat(cv::Mat src);
 };
 

@@ -53,7 +53,8 @@ void preProcessor::ResizeNMakeMat(IplImage *src, cv::Mat *dst){
 
 	//추후 수정
 	int tsize;
-	tsize = (tw > th ? tw : th) + 2;
+	tsize = (tw > th ? tw : th);
+	tsize += tsize/6;
 
 	tsrc = cvCreateImage(cvSize(tsize, tsize), IPL_DEPTH_8U, 1);
 	cvZero(tsrc);
@@ -69,6 +70,7 @@ void preProcessor::ResizeNMakeMat(IplImage *src, cv::Mat *dst){
 	cvResetImageROI(tsrc);
 
 	cvResize(tsrc, reInput);
+	//cvSmooth(reInput, reInput, CV_GAUSSIAN, 3, 3);
 	cvShowImage("testset", reInput);
 	cvWaitKey(10);
 

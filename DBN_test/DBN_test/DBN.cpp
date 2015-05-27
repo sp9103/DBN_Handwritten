@@ -76,7 +76,7 @@ void DBN::Training(){
 		while(1){
 			cv::Mat miniBatch;
 			/*BatchLoad(&miniBatch, NULL, "Data\\train-images.idx3-ubyte", "");*/
-			BatchRandLoad(&miniBatch, NULL);
+			BatchRandLoad(&miniBatch, NULL, BATCHSIZE);
 
 #ifdef DEBUG_VISIBLE
 			//Debug visualization
@@ -118,14 +118,23 @@ void DBN::Training(){
 	BatchClose();
 #endif
 
-	//supervised training - full optimization MLP backpropagation
+	//supervised training
 #ifdef BP_TRAINING
+	//full optimization MLP backpropagation
 	printf("\nSupervised Training phase start\n");
 	_super = clock();
 	FullBackpropagation();
 	Netsave("FullNetworkData.bin");
 
 	printf("Supervised Training phase complete (%dms)\n", clock() - _super);
+#elif defined(SOFTMAX)
+	//Logistic regresion
+	printf("\nSupervised Training phase  start - Logistic regression Layer train\n");
+	_super = clock();
+	LogisticTraining();
+	Netsave("LogisticNetData.bin");
+
+	printf("Supervised Trainin complete (%dms)\n", clock() - _super);
 #endif
 }
 
@@ -145,12 +154,12 @@ void DBN::Testing(){
 
 	//Test data open
 	printf("\nTest data set open....\n");
-	BatchOpen("Data\\t10k-images.idx3-ubyte", "Data\\t10k-labels.idx1-ubyte");
-	//BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx1-ubyte");
+	//BatchOpen("Data\\t10k-images.idx3-ubyte", "Data\\t10k-labels.idx1-ubyte");
+	BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx1-ubyte");
 	printf("\nTest data set open complete!\n");
 
 	while(1){
-		BatchRandLoad(&miniBatch, &BatchLabel);
+		BatchRandLoad(&miniBatch, &BatchLabel, BATCHSIZE);
 
 		for(int i = 0; i < BATCHSIZE; i++){
 			int ans = DBNquery(miniBatch.row(i));
@@ -162,11 +171,11 @@ void DBN::Testing(){
 			float CorrectRatio = (float)Ncorrect/(float)total * 100.0f;
 			printf("[%d] true : %d, ans : %d  (%f%%)\n", total, gtrue, ans, CorrectRatio);
 
-			if(ans != gtrue){
+			/*if(ans != gtrue){
 				DataSingleVis(miniBatch.row(i), "Error");
 				printf("false!\n");
 				cv::waitKey(0);
-			}
+			}*/
 		}
 
 		if(m_NEpoch > 0){
@@ -632,7 +641,7 @@ void DBN::BatchOpen(char *DataName, char* LabelName){
 		m_box[i] = i;
 
 }
-int DBN::BatchRandLoad(cv::Mat *batch, cv::Mat *Label){
+int DBN::BatchRandLoad(cv::Mat *batch, cv::Mat *Label, int nBatch){
 	static int count = 0;
 
 	if(count < 1){
@@ -645,18 +654,18 @@ int DBN::BatchRandLoad(cv::Mat *batch, cv::Mat *Label){
 	}
 
 	if(batch != NULL){
-		batch->create(BATCHSIZE, 28*28, CV_32FC1);
-		for(int i = 0; i < BATCHSIZE; i++){
+		batch->create(nBatch, 28*28, CV_32FC1);
+		for(int i = 0; i < nBatch; i++){
 			m_DataSet.row(m_box[count + i]).copyTo(batch->row(i));
 		}
 	}
 	if(Label != NULL){
-		Label->create(BATCHSIZE, 10, CV_32FC1);
-		for(int i = 0; i < BATCHSIZE; i++){
+		Label->create(nBatch, 10, CV_32FC1);
+		for(int i = 0; i < nBatch; i++){
 			m_LabelSet.row(m_box[count + i]).copyTo(Label->row(i));
 		}
 	}
-	count += BATCHSIZE;
+	count += nBatch;
 	if(count >= m_Dataloader.getDataCount()){
 		count = 0;
 		m_NEpoch++;
@@ -685,7 +694,7 @@ void DBN::FullBackpropagation(){
 
 	//정해진 Epoch만큼 루프
 	while(1){
-		BatchRandLoad(&miniBatch, &BatchLabel);
+		BatchRandLoad(&miniBatch, &BatchLabel, BATCHSIZE);
 
 		//Forward process
 		_start = clock();
@@ -694,7 +703,7 @@ void DBN::FullBackpropagation(){
 		_start = clock();
 
 		//Backward process
-		for(int i = LAYERHEIGHT-1; i > 0; i--){
+		for(int i = LAYERHEIGHT-1; i > -1; i--){
 			//output layer
 			if(i == LAYERHEIGHT-1){
 				delta[i].create(BATCHSIZE, classLayer.getUnitNum(), CV_32FC1);
@@ -706,9 +715,8 @@ void DBN::FullBackpropagation(){
 					}
 				}
 			}
-
+			//hidden layer
 			else{
-
 				delta[i].create(BATCHSIZE, hidden[i].getUnitNum(), CV_32FC1);
 
 				//delta calculation - hidden
@@ -737,13 +745,13 @@ void DBN::FullBackpropagation(){
 			cv::reduce(Avg, Avg, 1, CV_REDUCE_AVG);
 			cv::reduce(cGrad, cAvg, 0, CV_REDUCE_AVG);
 			cv::reduce(cAvg, cAvg, 1, CV_REDUCE_AVG);
-			printf("gradient : %f, bias : %f\n", Avg.at<float>(0,0), cAvg.at<float>(0,0));
+			printf("[%d] gradient : %f, bias : %f\n", i, Avg.at<float>(0,0)*100000.0f, cAvg.at<float>(0,0)*100000.0f);
 
 			//gradient apply
 			BPgradApply(wGrad, cGrad, i);
 		}
 
-		printf("[%d] BP Loop process (%dms)\n\n", ++batchCount, clock() - _start);
+		printf("\n[%d] BP Loop process (%dms)\n\n", ++batchCount, clock() - _start);
 		_start = clock();
 
 		if(m_NEpoch > NEPOCH){
@@ -870,4 +878,22 @@ void DBN::ForwardProcess(cv::Mat src, cv::Mat *dst){
 	classLayer.processPresData(&tOutput, tInput);
 
 	MatCopy(tOutput, dst);
+}
+
+void DBN::PrintMat(cv::Mat src){
+	printf("=================================================================\n");
+	for(int i = 0; i < src.rows; i++){
+		for(int j = 0; j < src.cols; j++){
+			printf("%f\t", src.at<float>(i,j));
+		}
+		printf("\n");
+	}
+	printf("=================================================================\n");
+}
+
+void DBN::LogisticTraining(){
+
+	printf("Batch Loading....\n");
+	BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx1-ubyte");
+	printf("Batch Load complete!\n");
 }
