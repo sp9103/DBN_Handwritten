@@ -308,11 +308,11 @@ void Layer::processTempSoft(cv::Mat *dst, cv::Mat input){
 	*dst = input * tW;
 	//cv::normalize(*dst, *dst, -10.0f, 10.0f);
 	for(int i = 0; i < dst->rows; i++)
-		cv::normalize(dst->row(i), dst->row(i), -10.0f, 10.0f);
+		MatMeanNormal(dst->row(i), &dst->row(i), 10.0f);
 
 	for(int i = 0; i < dst->rows; i++){
 		for(int j = 0; j < dst->cols; j++){
-			float tt = dst->at<float>(i,j);											//BUG
+			float tt = dst->at<float>(i,j);
 			tt = exp(tt);
 			dst->at<float>(i,j) = tt;
 		}
@@ -336,4 +336,12 @@ void Layer::PrintMat(cv::Mat src){
 		printf("\n");
 	}
 	printf("=================================================================\n");
+}
+
+void Layer::MatMeanNormal(cv::Mat src, cv::Mat *dst, double scale){
+	double min, max;
+
+	cv::minMaxLoc(src, &min, &max);
+	*dst = src * (scale / max);
+
 }

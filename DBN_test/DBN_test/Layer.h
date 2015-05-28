@@ -49,4 +49,7 @@ private:
 
 	//Debug용
 	void PrintMat(cv::Mat src);
+
+	//평균 보존하는 normalize
+	void MatMeanNormal(cv::Mat src, cv::Mat *dst, double scale);
 };
