@@ -89,5 +89,7 @@ private:
 
 	//Debug¿ë
 	void PrintMat(cv::Mat src);
+	void MatTempWrite(cv::Mat src);
+	void MatTempLoad(cv::Mat *dst);
 };
 

@@ -823,10 +823,16 @@ void DBN::BPForward(cv::Mat batch, cv::Mat *Ok){
 }
 
 void DBN::BPgradApply(cv::Mat wGrad, cv::Mat cGrad, int idx){
+	PrintMat(wGrad);
+	PrintMat(cGrad);
+
 	//classification layer
 	if(idx == LAYERHEIGHT - 1){
 		classLayer.m_weight = classLayer.m_weight + wGrad;
 		classLayer.m_c = classLayer.m_c + cGrad;
+
+		PrintMat(classLayer.m_weight);
+		PrintMat(classLayer.m_c);
 	}
 	//hidden layer
 	else{
@@ -905,16 +911,23 @@ void DBN::LogisticTraining(){
 
 	BatchRandLoad(&dataMat, &labelMat, m_Dataloader.getDataCount());
 
+	dataMat.release();
+	dataMat.create(m_Dataloader.getDataCount(), 201, CV_32FC1);
+
 	//이전 히든 레이어 전부 
-	_start = clock();
-	printf("Hidden Layer calculate start!\n");
-	for(int i = 0; i < LAYERHEIGHT-1; i++){
-		hidden[i].processPresData(&dataMat, dataMat);
-		printf("[%d] hidden layer process complete!\n", i);
-	}
-	AddColsOne(dataMat, &dataMat);
+	//_start = clock();
+	//printf("Hidden Layer calculate start!\n");
+	//for(int i = 0; i < LAYERHEIGHT-1; i++){
+	//	hidden[i].processPresData(&dataMat, dataMat);
+	//	printf("[%d] hidden layer process complete!\n", i);
+	//}
+	//AddColsOne(dataMat, &dataMat);
+	//printf("Hidden Layer process complete! (%dms)\n", clock() - _start);
 	wGrad.create(dataMat.cols, 10, CV_32FC1);
-	printf("Hidden Layer process complete! (%dms)\n", clock() - _start);
+
+	///Debuging///
+	//MatTempWrite(dataMat);
+	MatTempLoad(&dataMat);
 
 	for(int loop = 0; loop < NEPOCH; loop++){
 		_start = clock();
@@ -960,12 +973,23 @@ void DBN::AddColsOne(cv::Mat src, cv::Mat *dst){
 }
 
 void DBN::CalcWgradient(cv::Mat T, cv::Mat Y, cv::Mat data, cv::Mat *dst){
-	for(int j = 0; j < 10; j++)
-		for(int n = 0; n < data.rows; n++)
-			for(int dim = 0; dim < data.cols; dim++)
-				dst->at<float>(dim,j) += (Y.at<float>(n,j) - T.at<float>(n,j)) * data.at<float>(n,dim);
+	int _start = clock();
+
+	printf("Gradient calculation process....\n");
+	for(int j = 0; j < 10; j++){
+		for(int n = 0; n < data.rows; n++){
+			float ty = Y.at<float>(n,j);
+			float tt = T.at<float>(n,j);
+
+			for(int dim = 0; dim < data.cols; dim++){
+				float td = data.at<float>(n,dim);
+				dst->at<float>(dim,j) += (ty - tt) * td;
+			}
+		}
+	}
 
 	*dst = -EPSILON * *dst;
+	printf("Grdient calculate complete! (%dms)\n", clock() - _start);
 }
 
 float DBN::CalcError(cv::Mat T, cv::Mat data){
@@ -977,9 +1001,38 @@ float DBN::CalcError(cv::Mat T, cv::Mat data){
 	classLayer.processTempSoft(&tY, data);
 
 	//error calculation
-	for(int i = 0; i < T.rows; i++)
-		for(int j = 0; j < T.cols; j++)
-			error += T.at<float>(i,j) * log(tY.at<float>(i,j));
+	for(int i = 0; i < T.rows; i++){
+		for(int j = 0; j < T.cols; j++){
+			float tempT = T.at<float>(j,i);
+			float tempY = tY.at<float>(j,i);
+
+			error += tempT * log(tempY);
+		}
+	}
 
 	return error;
+}
+
+void DBN::MatTempWrite(cv::Mat src){
+	FILE *fp = fopen("temp.bin", "wb");
+
+	for(int i = 0; i < src.rows; i++){
+		for(int j = 0; j < src.cols; j++){
+			float tt = src.at<float>(i,j);
+			fwrite(&tt, sizeof(float), 1, fp);
+		}
+	}
+	fclose(fp);
+}
+void DBN::MatTempLoad(cv::Mat *dst){
+	FILE *fp = fopen("temp.bin", "rb");
+
+	for(int i = 0; i < dst->rows; i++){
+		for(int j = 0; j < dst->cols; j++){
+			float tt;
+			fread(&tt, sizeof(float), 1, fp);
+			dst->at<float>(i,j) = tt;
+		}
+	}
+	fclose(fp);
 }

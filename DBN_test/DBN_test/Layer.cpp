@@ -298,6 +298,9 @@ void Layer::processTempSoft(cv::Mat *dst, cv::Mat input){
 
 	tW.create(m_weight.rows+1, m_weight.cols, CV_32FC1);
 
+	PrintMat(m_weight);
+	PrintMat(m_c);
+
 	for(int i = 0; i < tW.rows; i++){
 		for(int j = 0; j < tW.cols; j++){
 			if(i == tW.rows - 1)		tW.at<float>(i,j) = m_c.at<float>(0,j);
@@ -306,15 +309,35 @@ void Layer::processTempSoft(cv::Mat *dst, cv::Mat input){
 	}
 
 	*dst = input * tW;
+	PrintMat(*dst);
+	PrintMat(tW);
 
-	for(int i = 0; i < dst->rows; i++)
-		for(int j = 0; j < dst->cols; j++)
-			dst->at<float>(i,j) = exp(dst->at<float>(i,j));
+	for(int i = 0; i < dst->rows; i++){
+		for(int j = 0; j < dst->cols; j++){
+			float tt = dst->at<float>(i,j);
+			tt = exp(tt);
+			dst->at<float>(i,j) = tt;
+		}
+	}
 
 	cv::reduce(*dst, tDenom, 1, CV_REDUCE_SUM);
+	PrintMat(*dst);
+	PrintMat(tDenom);
 
 	for(int i = 0; i < dst->rows; i++)
-		for(int j = 0; j < dst->cols; j++)
-			dst->at<float>(i,j) /= tDenom.at<float>(i,0);
+		for(int j = 0; j < dst->cols; j++){
+			float de = tDenom.at<float>(i,0);
+			dst->at<float>(i,j) /= de;
+		}
+}
 
+void Layer::PrintMat(cv::Mat src){
+	printf("=================================================================\n");
+	for(int i = 0; i < src.rows; i++){
+		for(int j = 0; j < src.cols; j++){
+			printf("%f\t", src.at<float>(i,j));
+		}
+		printf("\n");
+	}
+	printf("=================================================================\n");
 }

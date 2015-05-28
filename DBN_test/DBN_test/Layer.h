@@ -46,4 +46,7 @@ private:
 	int n_units;
 
 	float sigmoid(float src);
+
+	//Debug¿ë
+	void PrintMat(cv::Mat src);
 };
