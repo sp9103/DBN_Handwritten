@@ -926,10 +926,10 @@ void DBN::LogisticTraining(){
 				wGrad.at<float>(i,j) = 0.0f;
 
 		//Output calculation
-		classLayer.processTempSoft(&Ymat, dataMat); // <- 구현예정
+		classLayer.processTempSoft(&Ymat, dataMat);
 
 		//sumation
-
+		CalcWgradient(labelMat, Ymat, dataMat, &wGrad);
 
 		//gradient 반영
 		cv::Mat tWgrad;
@@ -940,7 +940,9 @@ void DBN::LogisticTraining(){
 		BPgradApply(tWgrad , wGrad.row(wGrad.rows-1), LAYERHEIGHT - 1);
 
 		//error check
+		float error = CalcError(labelMat, dataMat);
 
+		printf("Error : %f\n", error);
 		printf("{%d] complete! (%dms)\n", loop);
 	}
 }
@@ -955,4 +957,29 @@ void DBN::AddColsOne(cv::Mat src, cv::Mat *dst){
 			if(j == dst->cols-1)		dst->at<float>(i,j) = 1.0f;
 			else						dst->at<float>(i,j) = temp.at<float>(i,j);
 		}
+}
+
+void DBN::CalcWgradient(cv::Mat T, cv::Mat Y, cv::Mat data, cv::Mat *dst){
+	for(int j = 0; j < 10; j++)
+		for(int n = 0; n < data.rows; n++)
+			for(int dim = 0; dim < data.cols; dim++)
+				dst->at<float>(dim,j) += (Y.at<float>(n,j) - T.at<float>(n,j)) * data.at<float>(n,dim);
+
+	*dst = -EPSILON * *dst;
+}
+
+float DBN::CalcError(cv::Mat T, cv::Mat data){
+	float error = 0.0f;
+
+	cv::Mat tY;
+
+	//Output calculation
+	classLayer.processTempSoft(&tY, data);
+
+	//error calculation
+	for(int i = 0; i < T.rows; i++)
+		for(int j = 0; j < T.cols; j++)
+			error += T.at<float>(i,j) * log(tY.at<float>(i,j));
+
+	return error;
 }
