@@ -83,6 +83,7 @@ private:
 
 	//Logistic Regression
 	void LogisticTraining();
+	void AddColsOne(cv::Mat src, cv::Mat *dst);				//마지막 column 하나 추가. element는 1로
 
 	//Debug용
 	void PrintMat(cv::Mat src);

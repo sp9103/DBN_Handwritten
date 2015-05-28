@@ -172,9 +172,9 @@ void DBN::Testing(){
 			printf("[%d] true : %d, ans : %d  (%f%%)\n", total, gtrue, ans, CorrectRatio);
 
 			/*if(ans != gtrue){
-				DataSingleVis(miniBatch.row(i), "Error");
-				printf("false!\n");
-				cv::waitKey(0);
+			DataSingleVis(miniBatch.row(i), "Error");
+			printf("false!\n");
+			cv::waitKey(0);
 			}*/
 		}
 
@@ -371,7 +371,7 @@ float DBN::MatMaxEle(cv::Mat src){
 			float tele = abs(src.at<float>(i,j));
 
 			//if(tele > tmax)
-				tmax += tele;
+			tmax += tele;
 		}
 	}
 
@@ -893,6 +893,7 @@ void DBN::PrintMat(cv::Mat src){
 
 void DBN::LogisticTraining(){
 	cv::Mat dataMat, labelMat, hData;
+	cv::Mat wGrad, Ymat;
 	int _start;
 
 	_start = clock();
@@ -911,12 +912,45 @@ void DBN::LogisticTraining(){
 		hidden[i].processPresData(&dataMat, dataMat);
 		printf("[%d] hidden layer process complete!\n", i);
 	}
+	AddColsOne(dataMat, &dataMat);
+	wGrad.create(dataMat.cols, 10, CV_32FC1);
 	printf("Hidden Layer process complete! (%dms)\n", clock() - _start);
 
-	while(1){
+	for(int loop = 0; loop < NEPOCH; loop++){
+		_start = clock();
+		printf("[%d loop] calculate start!\n", loop);
 
-		if(m_NEpoch > NEPOCH){
-			break;
-		}
+		//gradient initialize
+		for(int i = 0; i < wGrad.rows; i++)
+			for(int j = 0; j < wGrad.cols; j++)
+				wGrad.at<float>(i,j) = 0.0f;
+
+		//Output calculation
+
+		//sumation
+
+		//gradient ¹Ý¿µ
+		cv::Mat tWgrad;
+		tWgrad.create(wGrad.rows-1, wGrad.cols, CV_32FC1);
+		for(int i = 0; i < tWgrad.rows; i++)
+			for(int j = 0; j < tWgrad.cols; j++)
+				tWgrad.at<float>(i,j) = wGrad.at<float>(i,j);
+		BPgradApply(tWgrad , wGrad.row(wGrad.rows-1), LAYERHEIGHT - 1);
+
+		//error check
+
+		printf("{%d] complete! (%dms)\n", loop);
 	}
+}
+
+void DBN::AddColsOne(cv::Mat src, cv::Mat *dst){
+	cv::Mat temp;
+	MatCopy(src, &temp);
+	dst->create(temp.rows, temp.cols+1, CV_32FC1);
+
+	for(int i = 0; i < dst->rows; i++)
+		for(int j = 0; j < dst->cols; j++){
+			if(j == dst->cols+1)		dst->at<float>(i,j) = 1.0f;
+			else						dst->at<float>(i,j) = temp.at<float>(i,j);
+		}
 }
