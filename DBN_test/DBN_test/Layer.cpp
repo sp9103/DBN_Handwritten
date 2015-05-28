@@ -298,9 +298,6 @@ void Layer::processTempSoft(cv::Mat *dst, cv::Mat input){
 
 	tW.create(m_weight.rows+1, m_weight.cols, CV_32FC1);
 
-	PrintMat(m_weight);
-	PrintMat(m_c);
-
 	for(int i = 0; i < tW.rows; i++){
 		for(int j = 0; j < tW.cols; j++){
 			if(i == tW.rows - 1)		tW.at<float>(i,j) = m_c.at<float>(0,j);
@@ -309,20 +306,19 @@ void Layer::processTempSoft(cv::Mat *dst, cv::Mat input){
 	}
 
 	*dst = input * tW;
-	PrintMat(*dst);
-	PrintMat(tW);
+	//cv::normalize(*dst, *dst, -10.0f, 10.0f);
+	for(int i = 0; i < dst->rows; i++)
+		cv::normalize(dst->row(i), dst->row(i), -10.0f, 10.0f);
 
 	for(int i = 0; i < dst->rows; i++){
 		for(int j = 0; j < dst->cols; j++){
-			float tt = dst->at<float>(i,j);
+			float tt = dst->at<float>(i,j);											//BUG
 			tt = exp(tt);
 			dst->at<float>(i,j) = tt;
 		}
 	}
 
 	cv::reduce(*dst, tDenom, 1, CV_REDUCE_SUM);
-	PrintMat(*dst);
-	PrintMat(tDenom);
 
 	for(int i = 0; i < dst->rows; i++)
 		for(int j = 0; j < dst->cols; j++){

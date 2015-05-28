@@ -823,16 +823,12 @@ void DBN::BPForward(cv::Mat batch, cv::Mat *Ok){
 }
 
 void DBN::BPgradApply(cv::Mat wGrad, cv::Mat cGrad, int idx){
-	PrintMat(wGrad);
-	PrintMat(cGrad);
+
 
 	//classification layer
 	if(idx == LAYERHEIGHT - 1){
 		classLayer.m_weight = classLayer.m_weight + wGrad;
 		classLayer.m_c = classLayer.m_c + cGrad;
-
-		PrintMat(classLayer.m_weight);
-		PrintMat(classLayer.m_c);
 	}
 	//hidden layer
 	else{
@@ -956,7 +952,7 @@ void DBN::LogisticTraining(){
 		float error = CalcError(labelMat, dataMat);
 
 		printf("Error : %f\n", error);
-		printf("{%d] complete! (%dms)\n", loop);
+		printf("[%d] complete! (%dms)\n", loop);
 	}
 }
 
