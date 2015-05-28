@@ -926,8 +926,10 @@ void DBN::LogisticTraining(){
 				wGrad.at<float>(i,j) = 0.0f;
 
 		//Output calculation
+		classLayer.processTempSoft(&Ymat, dataMat); // <- 구현예정
 
 		//sumation
+
 
 		//gradient 반영
 		cv::Mat tWgrad;
@@ -950,7 +952,7 @@ void DBN::AddColsOne(cv::Mat src, cv::Mat *dst){
 
 	for(int i = 0; i < dst->rows; i++)
 		for(int j = 0; j < dst->cols; j++){
-			if(j == dst->cols+1)		dst->at<float>(i,j) = 1.0f;
+			if(j == dst->cols-1)		dst->at<float>(i,j) = 1.0f;
 			else						dst->at<float>(i,j) = temp.at<float>(i,j);
 		}
 }

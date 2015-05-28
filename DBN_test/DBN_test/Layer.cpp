@@ -140,7 +140,7 @@ void Layer::processTempBack(cv::Mat *dst, cv::Mat input, cv::Mat *firstRow){
 
 	dst->create(input.rows, m_prevLayer->n_units, CV_32FC1);
 	//firstRow->create(1, m_prevLayer->n_units, CV_32FC1);
-	
+
 	cv::Mat tW;
 	tW.create(m_weight.cols+1, m_weight.rows, CV_32FC1);
 	for(int i = 0; i < tW.rows; i++){
@@ -159,7 +159,7 @@ void Layer::processTempBack(cv::Mat *dst, cv::Mat input, cv::Mat *firstRow){
 	/*cv::Mat AvgInput;
 
 	cv::reduce(tInput, AvgInput, 0, CV_REDUCE_AVG);*/
-	
+
 	*dst = tInput * tW;
 	//*dst = AvgInput * tW;
 
@@ -256,7 +256,7 @@ void Layer::WeightVis(){
 			}
 		}
 	}
-	
+
 	cv::imshow("Weight vis", tboard);
 	cv::waitKey(0);
 }
@@ -294,4 +294,27 @@ void Layer::processPresData(cv::Mat *dst, cv::Mat data){
 }
 
 void Layer::processTempSoft(cv::Mat *dst, cv::Mat input){
+	cv::Mat tW, tDenom;
+
+	tW.create(m_weight.rows+1, m_weight.cols, CV_32FC1);
+
+	for(int i = 0; i < tW.rows; i++){
+		for(int j = 0; j < tW.cols; j++){
+			if(i == tW.rows - 1)		tW.at<float>(i,j) = m_c.at<float>(0,j);
+			else						tW.at<float>(i,j) = m_weight.at<float>(i,j);
+		}
+	}
+
+	*dst = input * tW;
+
+	for(int i = 0; i < dst->rows; i++)
+		for(int j = 0; j < dst->cols; j++)
+			dst->at<float>(i,j) = exp(dst->at<float>(i,j));
+
+	cv::reduce(*dst, tDenom, 1, CV_REDUCE_SUM);
+
+	for(int i = 0; i < dst->rows; i++)
+		for(int j = 0; j < dst->cols; j++)
+			dst->at<float>(i,j) /= tDenom.at<float>(i,0);
+
 }
