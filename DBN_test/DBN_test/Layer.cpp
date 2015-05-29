@@ -342,6 +342,6 @@ void Layer::MatMeanNormal(cv::Mat src, cv::Mat *dst, double scale){
 	double min, max;
 
 	cv::minMaxLoc(src, &min, &max);
-	*dst = src * (scale / max);
-
+	if(max != 0.0f)
+		*dst = src * (scale / max);
 }

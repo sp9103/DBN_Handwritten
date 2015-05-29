@@ -17,13 +17,15 @@ void DBN::InitNetwork(){
 	hidden[0].Init(NHIDDEN1);
 	hidden[1].Init(NHIDDEN2);
 	hidden[2].Init(NHIDDEN3);
+	hidden[3].Init(NHIDDEN4);
 	classLayer.Init(NOUTPUT);
 
 	visible.setLayerRelation(NULL, &hidden[0]);
 	hidden[0].setLayerRelation(&visible, &hidden[1]);
 	hidden[1].setLayerRelation(&hidden[0], &hidden[2]);
-	hidden[2].setLayerRelation(&hidden[1], &classLayer);
-	classLayer.setLayerRelation(&hidden[2], NULL);
+	hidden[2].setLayerRelation(&hidden[1], &hidden[3]);
+	hidden[3].setLayerRelation(&hidden[2], &classLayer);
+	classLayer.setLayerRelation(&hidden[3], NULL);
 
 	/*visible.setLayerRelation(NULL, &hidden[0]);
 	hidden[0].setLayerRelation(&visible, &classLayer);
@@ -147,7 +149,8 @@ void DBN::Testing(){
 	printf("DBN Testing phase\n");
 	printf("\nNetwork Initialzie from file....\n");
 	InitNetwork();
-	NetLoad("FullNetworkData.bin");
+	//NetLoad("FullNetworkData.bin");
+	NetLoad("LogisticNetData.bin");
 	printf("Initialize complete!\n");
 
 	hidden[0].WeightVis();
@@ -157,6 +160,8 @@ void DBN::Testing(){
 	//BatchOpen("Data\\t10k-images.idx3-ubyte", "Data\\t10k-labels.idx1-ubyte");
 	BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx1-ubyte");
 	printf("\nTest data set open complete!\n");
+
+	PrintMat(classLayer.m_weight);
 
 	while(1){
 		BatchRandLoad(&miniBatch, &BatchLabel, BATCHSIZE);
@@ -840,15 +845,23 @@ void DBN::BPgradApply(cv::Mat wGrad, cv::Mat cGrad, int idx){
 int DBN::DBNquery(cv::Mat src){
 	int retVal = -1;
 	cv::Mat tInput, tOutput;
-
+#ifdef BP_TRAINING
 	ForwardProcess(src, &tOutput);
 
 	//결과중 가장 큰 놈 산출
 	for(int i = 0; i < tOutput.cols; i++)
 		printf("%f\t", tOutput.at<float>(0,i));
 	printf("\n");
-	retVal = FindMaxIdx(tOutput);
+#elif defined(SOFTMAX)
+	for(int i = 0; i < LAYERHEIGHT-1; i++){
+		hidden[i].processPresData(&src, src);
+		printf("[%d] hidden layer process complete!\n", i);
+	}
+	AddColsOne(src, &src);
+	classLayer.processTempSoft(&tOutput, src);
+#endif
 
+	retVal = FindMaxIdx(tOutput);
 	return retVal;
 }
 
@@ -925,7 +938,7 @@ void DBN::LogisticTraining(){
 	//MatTempWrite(dataMat);
 	MatTempLoad(&dataMat);
 
-	for(int loop = 0; loop < NEPOCH; loop++){
+	for(int loop = 0; loop < NEPOCH*10; loop++){
 		_start = clock();
 		printf("[%d loop] calculate start!\n", loop);
 
@@ -948,11 +961,15 @@ void DBN::LogisticTraining(){
 				tWgrad.at<float>(i,j) = wGrad.at<float>(i,j);
 		BPgradApply(tWgrad , wGrad.row(wGrad.rows-1), LAYERHEIGHT - 1);
 
+		cv::Mat tempG;
+		cv::reduce(tWgrad, tempG, 0, CV_REDUCE_AVG);
+		cv::reduce(tempG, tempG, 1, CV_REDUCE_AVG);
+
 		//error check
 		float error = CalcError(labelMat, dataMat);
 
-		printf("Error : %f\n", error);
-		printf("[%d] complete! (%dms)\n", loop);
+		printf("Error : %f , gradient : %f\n", error, tempG.at<float>(0,0));
+		printf("[%d] complete! (%dms)\n", loop, clock() - _start);
 	}
 }
 
