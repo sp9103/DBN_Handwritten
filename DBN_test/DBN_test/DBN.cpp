@@ -59,6 +59,7 @@ void DBN::Training(){
 	RBMLayerload("Layer1Info.bin", &hidden[0]);
 	RBMLayerload("Layer2Info.bin", &hidden[1]);
 	RBMLayerload("Layer3Info.bin", &hidden[2]);
+	RBMLayerload("Layer4Info.bin", &hidden[3]);
 	hidden[0].WeightVis();
 
 	//unsupervised training - °¢ RBM ÇÐ½À
@@ -69,7 +70,7 @@ void DBN::Training(){
 	BatchOpen("Data\\train-images.idx3-ubyte", "");
 	printf("Data load Complete! (%dms)\n", clock() - _start);
 
-	for(int i = 2; i < LAYERHEIGHT-1; i++){
+	for(int i = 3; i < LAYERHEIGHT-1; i++){
 		printf("[%d] RBM Training...\n", i+1);
 		batchCount = 0;
 		_phase = clock();
@@ -123,6 +124,7 @@ void DBN::Training(){
 	//supervised training
 #ifdef BP_TRAINING
 	//full optimization MLP backpropagation
+	NetLoad("FullNetworkData.bin");
 	printf("\nSupervised Training phase start\n");
 	_super = clock();
 	FullBackpropagation();
@@ -149,16 +151,16 @@ void DBN::Testing(){
 	printf("DBN Testing phase\n");
 	printf("\nNetwork Initialzie from file....\n");
 	InitNetwork();
-	//NetLoad("FullNetworkData.bin");
-	NetLoad("LogisticNetData.bin");
+	NetLoad("FullNetworkData.bin");
+	//NetLoad("LogisticNetData.bin");
 	printf("Initialize complete!\n");
 
 	hidden[0].WeightVis();
 
 	//Test data open
 	printf("\nTest data set open....\n");
-	//BatchOpen("Data\\t10k-images.idx3-ubyte", "Data\\t10k-labels.idx1-ubyte");
-	BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx1-ubyte");
+	BatchOpen("Data\\t10k-images.idx3-ubyte", "Data\\t10k-labels.idx1-ubyte");
+	//BatchOpen("Data\\train-images.idx3-ubyte", "Data\\train-labels.idx1-ubyte");
 	printf("\nTest data set open complete!\n");
 
 	PrintMat(classLayer.m_weight);
@@ -236,10 +238,17 @@ float DBN::RBMupdata(cv::Mat minibatch, float e, Layer *layer, int step){
 		//}
 
 		//VisFrequency = (VisFrequency+1) % 10;
+	}else if(layer->m_prevLayer->m_prevLayer->m_prevLayer->m_prevLayer == NULL){
+		cv::Mat debugXk;
+		layer->m_prevLayer->processTempBack(&debugXk, xk, NULL);
+		layer->m_prevLayer->m_prevLayer->processTempBack(&debugXk, debugXk, NULL);
+		DataSingleVis(debugXk, "Reconstruct");
+		cv::waitKey(1);
 	}else{
 		cv::Mat debugXk;
 		layer->m_prevLayer->processTempBack(&debugXk, xk, NULL);
 		layer->m_prevLayer->m_prevLayer->processTempBack(&debugXk, debugXk, NULL);
+		layer->m_prevLayer->m_prevLayer->m_prevLayer->processTempBack(&debugXk, debugXk, NULL);
 		DataSingleVis(debugXk, "Reconstruct");
 		cv::waitKey(1);
 	}
@@ -465,7 +474,7 @@ void DBN::Netsave(char *fileName){
 }
 
 void DBN::NetLoad(char *fileName){
-	printf("Training result Loading..\n");
+	printf("Full Training result Loading..\n");
 	FILE *fp = fopen(fileName, "rb");
 	//SaveFile
 	int temp;

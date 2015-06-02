@@ -4,7 +4,7 @@
 #include "Layer.h"
 
 //#define DEBUG_VISIBLE
-#define RBM_TRAINING
+//#define RBM_TRAINING
 #define BP_TRAINING
 //#define SOFTMAX
 
